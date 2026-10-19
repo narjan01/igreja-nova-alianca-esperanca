@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MembersManagement } from './MembersManagement';
 import { CellsManagement } from './CellsManagement';
+import { EventsManagement } from './EventsManagement';
 import { FinanceiroTab } from './FinanceiroTab';
 import { ConfraTab } from './ConfraTab';
 import { AgendaTab } from './AgendaTab';
@@ -8,6 +9,7 @@ import { GitHubTab } from './GitHubTab';
 import { 
   Users, 
   Home, 
+  Calendar,
   Music, 
   Receipt, 
   PartyPopper, 
@@ -27,7 +29,7 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'members' | 'cells' | 'louvor-financeiro' | 'louvor-confra' | 'louvor-agenda' | 'integracoes'>('members');
+  const [activeTab, setActiveTab] = useState<'events' | 'members' | 'cells' | 'louvor-financeiro' | 'louvor-confra' | 'louvor-agenda' | 'integracoes'>('events');
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-purple-500/30 selection:text-purple-200">
@@ -77,6 +79,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite, onLogout }
         {/* Navigation Tabs */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <nav className="flex space-x-1 sm:space-x-2 border-t border-zinc-800/60 py-2 overflow-x-auto scrollbar-none">
+            {/* Eventos e Cultos */}
+            <button
+              onClick={() => setActiveTab('events')}
+              className={`flex items-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                activeTab === 'events'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-950/40'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              Cultos & Eventos
+            </button>
+
             {/* Membros */}
             <button
               onClick={() => setActiveTab('members')}
@@ -158,6 +173,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToSite, onLogout }
 
       {/* Main Content Body */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full flex-1">
+        {activeTab === 'events' && <EventsManagement />}
         {activeTab === 'members' && <MembersManagement />}
         {activeTab === 'cells' && <CellsManagement />}
         {activeTab === 'louvor-financeiro' && <FinanceiroTab isAdmin={true} onOpenPix={() => {}} onOpenRelatorio={() => {}} />}

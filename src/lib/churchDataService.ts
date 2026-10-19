@@ -1,7 +1,39 @@
 import { getSupabase } from './supabase';
-import { ChurchMember, ChurchCell } from '../types';
+import { ChurchMember, ChurchCell, ChurchEvent } from '../types';
 
 export class ChurchDataService {
+  /**
+   * Busca eventos/cultos do Supabase (com cache local)
+   */
+  static async getEvents(): Promise<ChurchEvent[]> {
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .order('id', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          localStorage.setItem('cached_church_events', JSON.stringify(data));
+          return data as ChurchEvent[];
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar eventos do Supabase:', e);
+      }
+    }
+
+    // Fallback: cache local
+    const cached = localStorage.getItem('cached_church_events');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {}
+    }
+
+    return [];
+  }
+
   /**
    * Busca membros do Supabase (com cache local)
    */

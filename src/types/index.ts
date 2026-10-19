@@ -158,3 +158,25 @@ export interface ChurchCell {
   longitude?: number;
   synced_at?: string;
 }
+
+export interface ChurchEvent {
+  id: number | string;
+  title: string;
+  image?: string | null;
+  thumbnail?: string | null;
+  description: string;
+  start_datetime?: string | null;
+  end_datetime?: string | null;
+  location?: {
+    address?: string | null;
+    city?: string | null;
+    state?: string | null;
+    neighborhood?: string | null;
+    name?: string | null;
+  } | null;
+  category?: string | null;
+  public_url?: string | null;
+  show_on_site?: boolean;
+  highlighted?: boolean;
+  synced_at?: string;
+}

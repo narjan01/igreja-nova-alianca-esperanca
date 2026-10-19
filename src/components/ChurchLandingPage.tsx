@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { ChurchEvent } from '../types';
+import { ChurchDataService } from '../lib/churchDataService';
 import { 
   Church, 
   Music, 
@@ -13,8 +15,11 @@ import {
   ShieldCheck,
   Compass,
   Phone,
-  Instagram,
-  Youtube
+  Share2,
+  X,
+  BookOpen,
+  CalendarDays,
+  Tag
 } from 'lucide-react';
 
 interface ChurchLandingPageProps {
@@ -26,6 +31,22 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
   onGoToLouvorPortal,
   onGoToAdmin 
 }) => {
+  const [events, setEvents] = useState<ChurchEvent[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<ChurchEvent | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const loadEvents = async () => {
+    setLoadingEvents(true);
+    const data = await ChurchDataService.getEvents();
+    setEvents(data);
+    setLoadingEvents(false);
+  };
+
   const handlePortalLouvor = () => {
     if (onGoToLouvorPortal) {
       onGoToLouvorPortal();
@@ -33,6 +54,30 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
       window.location.href = 'https://louvor.novaliancaesperancajp.com.br';
     }
   };
+
+  const handleShare = (event: ChurchEvent) => {
+    if (navigator.share) {
+      navigator.share({
+        title: event.title,
+        text: event.description.slice(0, 150) + '...',
+        url: window.location.href,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(`${event.title}\n\n${event.description}`);
+      alert('Texto copiado para a área de transferência!');
+    }
+  };
+
+  // Filtrar eventos com imagem ou descrição relevante
+  const filteredEvents = events.filter((ev) => {
+    if (activeFilter === 'cultos') {
+      return ev.title.toLowerCase().includes('culto') || ev.title.toLowerCase().includes('ensino');
+    }
+    if (activeFilter === 'celulas') {
+      return ev.title.toLowerCase().includes('célula') || ev.title.toLowerCase().includes('celula');
+    }
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-purple-500/30 selection:text-purple-200">
@@ -54,6 +99,13 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <a
+              href="#programacao"
+              className="hidden md:inline-flex px-3 py-1.5 text-xs text-zinc-300 hover:text-white font-medium transition"
+            >
+              Programação & Blog
+            </a>
+
             <button
               onClick={handlePortalLouvor}
               className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700 text-xs font-bold transition flex items-center gap-2 cursor-pointer"
@@ -92,107 +144,158 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
           </h1>
 
           <p className="text-zinc-400 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-            Igreja Nova Aliança Esperança. Conectando corações através do louvor, comunhão, estudo da Palavra e amor ao próximo.
+            Igreja Nova Aliança Esperança em João Pessoa. Conectando corações através do louvor, comunhão, estudo da Palavra e amor ao próximo.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
+            <a
+              href="#programacao"
+              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-bold shadow-xl shadow-purple-950/50 flex items-center gap-2.5 transition"
+            >
+              <Calendar className="w-4 h-4 text-purple-200" />
+              <span>Ver Programação & Notícias</span>
+              <ArrowRight className="w-4 h-4" />
+            </a>
+
             <button
               onClick={handlePortalLouvor}
-              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-bold shadow-xl shadow-purple-950/50 flex items-center gap-2.5 transition cursor-pointer"
+              className="px-6 py-3.5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 hover:text-white text-sm font-bold transition flex items-center gap-2 cursor-pointer"
             >
-              <Music className="w-4 h-4 text-purple-200" />
-              <span>Acessar Portal do Louvor</span>
-              <ArrowRight className="w-4 h-4" />
+              <Music className="w-4 h-4 text-purple-400" />
+              <span>Portal do Louvor</span>
             </button>
-
-            <a
-              href="#cultos"
-              className="px-6 py-3.5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 hover:text-white text-sm font-bold transition flex items-center gap-2"
-            >
-              <Clock className="w-4 h-4 text-amber-400" />
-              <span>Horários dos Cultos</span>
-            </a>
           </div>
         </div>
       </section>
 
-      {/* Programação dos Cultos */}
-      <section id="cultos" className="py-16 sm:py-20 border-b border-zinc-800/80 max-w-5xl mx-auto px-4 sm:px-6 w-full space-y-10">
-        <div className="text-center space-y-2">
-          <span className="text-xs font-bold tracking-wider text-purple-400 uppercase">
-            Venha nos visitar
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-white">
-            Programação Semanal & Cultos
-          </h2>
-          <p className="text-xs sm:text-sm text-zinc-400 max-w-xl mx-auto">
-            Nossas portas e braços estão abertos para você celebrar a Deus conosco.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Card Domingo Manhã */}
-          <div className="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 space-y-4 hover:border-purple-500/40 transition">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center font-bold">
-              <Calendar className="w-5 h-5" />
+      {/* Programação dos Cultos & Blog de Eventos (Sincronizado inChurch) */}
+      <section id="programacao" className="py-16 sm:py-24 border-b border-zinc-800/80 max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-bold border border-purple-500/20">
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Sincronizado com a inChurch</span>
             </div>
-            <div>
-              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider block">Domingo Manhã</span>
-              <h3 className="text-lg font-bold text-white mt-0.5">Escola Bíblica & Celebração</h3>
-            </div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-amber-400 bg-amber-500/10 py-1.5 px-3 rounded-xl border border-amber-500/20 w-fit">
-              <Clock className="w-3.5 h-3.5" />
-              <span>09:00h às 11:30h</span>
-            </div>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Momento de aprofundamento bíblico, oração, classes infantis e ministração da Palavra.
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
+              Programação Semanal & Cultos
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-400 max-w-xl">
+              Fique por dentro de todos os cultos, séries de mensagens, reuniões de células e eventos especiais da igreja. Clique para ver todo o conteúdo!
             </p>
           </div>
 
-          {/* Card Domingo Noite */}
-          <div className="bg-zinc-900/90 border border-purple-500/30 rounded-3xl p-6 space-y-4 relative shadow-lg shadow-purple-950/20">
-            <span className="absolute top-4 right-4 px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-bold border border-purple-500/40">
-              Culto Principal
-            </span>
-            <div className="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center font-bold">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider block">Domingo Noite</span>
-              <h3 className="text-lg font-bold text-white mt-0.5">Culto da Família & Louvor</h3>
-            </div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-purple-300 bg-purple-500/15 py-1.5 px-3 rounded-xl border border-purple-500/30 w-fit">
-              <Clock className="w-3.5 h-3.5 text-purple-400" />
-              <span>18:30h</span>
-            </div>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Grande celebração com louvor ao vivo pela banda da igreja, comunhão e mensagem edificante.
-            </p>
-          </div>
-
-          {/* Card Quarta-feira */}
-          <div className="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 space-y-4 hover:border-indigo-500/40 transition">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-bold">
-              <HeartHandshake className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider block">Quarta-feira</span>
-              <h3 className="text-lg font-bold text-white mt-0.5">Culto de Oração & Ensino</h3>
-            </div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-indigo-300 bg-indigo-500/10 py-1.5 px-3 rounded-xl border border-indigo-500/20 w-fit">
-              <Clock className="w-3.5 h-3.5" />
-              <span>19:30h</span>
-            </div>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Noite dedicada à oração intercessória, clamor pelas famílias e estudo expositivo das escrituras.
-            </p>
+          {/* Filtros de Categorias */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
+            <button
+              onClick={() => setActiveFilter('all')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                activeFilter === 'all'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800'
+              }`}
+            >
+              Todos ({events.length})
+            </button>
+            <button
+              onClick={() => setActiveFilter('cultos')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                activeFilter === 'cultos'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800'
+              }`}
+            >
+              Cultos & Ensino
+            </button>
+            <button
+              onClick={() => setActiveFilter('celulas')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                activeFilter === 'celulas'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800'
+              }`}
+            >
+              Células
+            </button>
           </div>
         </div>
+
+        {/* Grid de Eventos / Blog Feed */}
+        {loadingEvents ? (
+          <div className="py-20 text-center space-y-3">
+            <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-xs text-zinc-400">Carregando programação oficial...</p>
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          <div className="py-16 text-center bg-zinc-900/40 rounded-3xl border border-zinc-800 space-y-2">
+            <Calendar className="w-10 h-10 text-zinc-600 mx-auto" />
+            <h3 className="text-sm font-bold text-zinc-300">Nenhum evento encontrado no filtro selecionado</h3>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredEvents.map((event) => {
+              const hasImage = Boolean(event.image || event.thumbnail);
+              const previewText = event.description
+                ? event.description.replace(/\n+/g, ' ').slice(0, 140) + '...'
+                : 'Clique para conferir todos os detalhes e informações deste momento especial conosco.';
+
+              return (
+                <article
+                  key={event.id}
+                  onClick={() => setSelectedEvent(event)}
+                  className="bg-zinc-900/90 border border-zinc-800 hover:border-purple-500/40 rounded-3xl overflow-hidden flex flex-col justify-between transition group shadow-sm hover:shadow-2xl hover:shadow-purple-950/30 cursor-pointer"
+                >
+                  <div>
+                    {/* Imagem do Evento / Banner do inChurch */}
+                    <div className="h-48 bg-zinc-800 relative overflow-hidden">
+                      {hasImage ? (
+                        <img
+                          src={event.image || event.thumbnail || ''}
+                          alt={event.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-tr from-purple-950 via-zinc-900 to-indigo-950 flex items-center justify-center p-6 text-center">
+                          <Church className="w-12 h-12 text-zinc-700" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent"></div>
+
+                      <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-zinc-900/90 backdrop-blur-md text-purple-300 border border-purple-500/30 text-[10px] font-bold">
+                        Programação Oficial
+                      </span>
+                    </div>
+
+                    {/* Conteúdo Textual */}
+                    <div className="p-5 sm:p-6 space-y-3">
+                      <h3 className="text-lg font-black text-white tracking-tight group-hover:text-purple-300 transition line-clamp-2">
+                        {event.title}
+                      </h3>
+
+                      <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3">
+                        {previewText}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Rodapé do Card com Ação */}
+                  <div className="px-5 pb-5 sm:px-6 sm:pb-6 pt-0 flex items-center justify-between border-t border-zinc-800/60 mt-2">
+                    <span className="text-[11px] font-bold text-purple-400 group-hover:text-purple-300 flex items-center gap-1.5 transition">
+                      <span>Ler assunto completo</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
+                    </span>
+                    <span className="text-[10px] text-zinc-500">inChurch Event</span>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* Destaque Portal do Louvor */}
       <section className="py-14 max-w-5xl mx-auto px-4 sm:px-6 w-full">
-        <div className="rounded-3xl bg-gradient-to-r from-purple-950/70 via-indigo-950/50 to-zinc-900 border border-purple-500/30 p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="rounded-3xl bg-gradient-to-r from-purple-950/70 via-indigo-950/50 to-zinc-900 border border-purple-500/30 p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl shadow-purple-950/20">
           <div className="space-y-3 max-w-xl text-center md:text-left">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-semibold">
               <Music className="w-3.5 h-3.5" />
@@ -202,7 +305,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
               Área Exclusiva de Músicos & Equipe
             </h3>
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              Acesso às escalas de cultos sincronizadas com Google Agenda, recibos de mensalidades, fundo de confraternização e controle de presenças.
+              Acesso às escalas de cultos sincronizadas com Google Agenda e LouveApp, recibos de mensalidades, fundo de confraternização e chamada de ensaios.
             </p>
           </div>
 
@@ -232,6 +335,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
             </h3>
             <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">
               João Pessoa — Paraíba, Brasil.<br/>
+              R. Joaquim Monteiro de Franca, nº 457 - Gramame / Colinas do Sul.<br/>
               Um ambiente de paz, restauração e adoração para toda a sua família.
             </p>
 
@@ -269,6 +373,101 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
           Todos os direitos reservados.
         </p>
       </footer>
+
+      {/* ========================================================================= */}
+      {/* MODAL COMPLETO: LEITURA DO ASSUNTO / ARTIGO DO EVENTO (BLOG VIEW)        */}
+      {/* ========================================================================= */}
+      {selectedEvent && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in"
+          onClick={() => setSelectedEvent(null)}
+        >
+          <div 
+            className="bg-zinc-900 border border-zinc-700/80 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Banner do Modal com botão Fechar */}
+            <div className="relative h-56 sm:h-72 bg-zinc-800 shrink-0 overflow-hidden">
+              {selectedEvent.image ? (
+                <img
+                  src={selectedEvent.image}
+                  alt={selectedEvent.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-tr from-purple-900 via-zinc-900 to-indigo-900 flex items-center justify-center">
+                  <Church className="w-16 h-16 text-zinc-600" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/30 to-transparent"></div>
+
+              {/* Botão Fechar no Canto */}
+              <button
+                onClick={() => setSelectedEvent(null)}
+                className="absolute top-4 right-4 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md transition cursor-pointer"
+                title="Fechar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="absolute bottom-4 left-6 right-6">
+                <span className="px-3 py-1 rounded-full bg-purple-500/20 backdrop-blur-md text-purple-300 border border-purple-500/30 text-xs font-bold inline-block mb-2">
+                  Programação Oficial
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight drop-shadow-md">
+                  {selectedEvent.title}
+                </h2>
+              </div>
+            </div>
+
+            {/* Corpo do Conteúdo / Assunto Completo */}
+            <div className="p-6 sm:p-8 overflow-y-auto space-y-6 flex-1 text-zinc-300">
+              {/* Texto Completo com Quebra de Linhas Preservada */}
+              <div className="text-sm sm:text-base leading-relaxed whitespace-pre-line text-zinc-200 font-normal space-y-4">
+                {selectedEvent.description || "Nenhum detalhe adicional informado para este evento."}
+              </div>
+
+              {/* Endereço / Localização da Igreja */}
+              <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 space-y-2 text-xs">
+                <div className="flex items-center gap-2 text-purple-400 font-bold uppercase tracking-wider">
+                  <MapPin className="w-4 h-4" />
+                  <span>Localização</span>
+                </div>
+                <p className="text-zinc-300">
+                  Igreja Nova Aliança Esperança — R. Joaquim Monteiro de Franca, nº 457, Colinas do Sul / Gramame, João Pessoa - PB.
+                </p>
+                <a
+                  href="https://www.google.com/maps/search/?api=1&query=Rua+Joaquim+Monteiro+da+Franca+457+Gramame+Joao+Pessoa"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-purple-400 hover:text-purple-300 font-bold mt-1 text-xs"
+                >
+                  <span>Abrir no Google Maps</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+
+            {/* Rodapé do Modal */}
+            <div className="p-4 sm:p-6 bg-zinc-950/80 border-t border-zinc-800 flex items-center justify-between gap-3 shrink-0">
+              <button
+                onClick={() => handleShare(selectedEvent)}
+                className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer"
+              >
+                <Share2 className="w-4 h-4 text-purple-400" />
+                <span>Compartilhar</span>
+              </button>
+
+              <button
+                onClick={() => setSelectedEvent(null)}
+                className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition shadow-lg shadow-purple-900/40 cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -63,11 +63,32 @@ CREATE TABLE IF NOT EXISTS public.cells (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Índices para células
 CREATE INDEX IF NOT EXISTS idx_cells_name ON public.cells (name);
 CREATE INDEX IF NOT EXISTS idx_cells_category ON public.cells (category);
 
--- 3. TABELA DE VÍNCULO MEMBRO <-> CÉLULA (Cell Memberships)
+-- 3. TABELA DE EVENTOS E PROGRAMAÇÃO DE CULTOS (inChurch Events / Blog)
+CREATE TABLE IF NOT EXISTS public.events (
+    id BIGINT PRIMARY KEY,
+    title TEXT NOT NULL,
+    image TEXT,
+    thumbnail TEXT,
+    description TEXT,
+    start_datetime TIMESTAMPTZ,
+    end_datetime TIMESTAMPTZ,
+    location JSONB DEFAULT '{}'::jsonb,
+    category TEXT,
+    public_url TEXT,
+    show_on_site BOOLEAN DEFAULT true,
+    highlighted BOOLEAN DEFAULT false,
+    raw_data JSONB,
+    synced_at TIMESTAMPTZ DEFAULT now(),
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_events_start ON public.events (start_datetime);
+CREATE INDEX IF NOT EXISTS idx_events_title ON public.events (title);
+
+-- 4. TABELA DE VÍNCULO MEMBRO <-> CÉLULA (Cell Memberships)
 CREATE TABLE IF NOT EXISTS public.cell_members (
     id BIGSERIAL PRIMARY KEY,
     cell_id BIGINT REFERENCES public.cells(id) ON DELETE CASCADE,

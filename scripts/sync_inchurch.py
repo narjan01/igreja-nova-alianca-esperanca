@@ -35,6 +35,55 @@ supabase_headers = {
     "Prefer": "resolution=merge-duplicates"
 }
 
+def sync_events():
+    print("\n--- Sincronizando Eventos & Cultos da inChurch ---")
+    url = "https://api.inchurch.com.br/public/v1/event/?limit=100"
+    all_events = []
+    
+    while url:
+        req = urllib.request.Request(url, headers=inchurch_headers)
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+        results = data.get("results", []) if isinstance(data, dict) else data
+        all_events.extend(results)
+        url = data.get("next") if isinstance(data, dict) else None
+        
+    print(f"Total de eventos obtidos na inChurch: {len(all_events)}")
+    
+    events_to_upsert = []
+    for ev in all_events:
+        start_dt = ev.get("start_datetime")
+        if start_dt and len(str(start_dt).strip()) == 0:
+            start_dt = None
+            
+        end_dt = ev.get("end_datetime")
+        if end_dt and len(str(end_dt).strip()) == 0:
+            end_dt = None
+
+        events_to_upsert.append({
+            "id": ev.get("id"),
+            "title": ev.get("name") or ev.get("title") or "Culto / Evento",
+            "image": ev.get("image") or ev.get("banner_image") or ev.get("app_image"),
+            "thumbnail": ev.get("thumbnail") or ev.get("image_webp"),
+            "description": ev.get("description") or "",
+            "start_datetime": start_dt,
+            "end_datetime": end_dt,
+            "location": ev.get("location") or {},
+            "category": "Cultos & Programação",
+            "public_url": ev.get("public_url") or ev.get("event_url"),
+            "show_on_site": ev.get("show_on_site", True),
+            "highlighted": ev.get("highlighted", False),
+            "raw_data": ev
+        })
+        
+    url_supa = f"{SUPABASE_URL}/rest/v1/events"
+    req_supa = urllib.request.Request(url_supa, headers=supabase_headers, data=json.dumps(events_to_upsert).encode('utf-8'), method="POST")
+    try:
+        with urllib.request.urlopen(req_supa, timeout=30) as resp:
+            print(f"✅ Sucesso! {len(events_to_upsert)} eventos/cultos sincronizados no Supabase! HTTP {resp.status}")
+    except urllib.error.HTTPError as e:
+        print(f"❌ Erro ao enviar eventos: HTTP {e.code} - {e.read().decode('utf-8')}")
+
 def sync_cells():
     print("\n--- Sincronizando Células da inChurch ---")
     url = "https://api.inchurch.com.br/public/v1/cell/?limit=100"
@@ -94,7 +143,6 @@ def sync_members():
         
     print(f"\nTotal final de membros obtidos da inChurch: {len(all_members)}")
     
-    # Processar em lotes de 50 para o Supabase
     batch_size = 50
     for i in range(0, len(all_members), batch_size):
         batch = all_members[i:i+batch_size]
@@ -151,6 +199,7 @@ def sync_members():
 
 if __name__ == "__main__":
     print("Iniciando sincronização completa inChurch -> Supabase...")
+    sync_events()
     sync_cells()
     sync_members()
     print("\n🎉 Sincronização finalizada com sucesso!")
