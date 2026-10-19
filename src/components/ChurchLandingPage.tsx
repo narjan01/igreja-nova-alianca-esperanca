@@ -8,19 +8,31 @@ import {
   Clock, 
   HeartHandshake, 
   ArrowRight, 
-  ExternalLink,
-  ShieldCheck,
-  Share2,
-  X,
-  BookOpen,
-  ChevronDown,
-  ChevronUp,
-  Navigation,
-  Youtube,
-  Instagram,
-  Download,
-  Smartphone,
-  Menu
+  ExternalLink, 
+  ShieldCheck, 
+  Share2, 
+  X, 
+  BookOpen, 
+  ChevronDown, 
+  ChevronUp, 
+  Navigation, 
+  Youtube, 
+  Instagram, 
+  Menu,
+  Heart,
+  Flag,
+  Telescope,
+  Sprout,
+  Zap,
+  Shield,
+  Feather,
+  Eye,
+  Layers,
+  Globe,
+  Cake,
+  Users,
+  Compass,
+  Info
 } from 'lucide-react';
 
 interface ChurchLandingPageProps {
@@ -39,38 +51,10 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
   const [selectedEvent, setSelectedEvent] = useState<ChurchEvent | null>(null);
   const [showAllEvents, setShowAllEvents] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // PWA Install Prompt State
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isAppInstalled, setIsAppInstalled] = useState(false);
-  const [showInstallGuide, setShowInstallGuide] = useState(false);
+  const [showMatrizModal, setShowMatrizModal] = useState(false);
 
   useEffect(() => {
     loadEvents();
-
-    // Listener para o evento de instalação do PWA
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    const handleAppInstalled = () => {
-      setIsAppInstalled(true);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    // Verificar se já está rodando em modo standalone (PWA instalado)
-    if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
-      setIsAppInstalled(true);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
   }, []);
 
   const loadEvents = async () => {
@@ -78,20 +62,6 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
     const data = await ChurchDataService.getEvents();
     setEvents(data);
     setLoadingEvents(false);
-  };
-
-  const handleInstallApp = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const choiceResult = await deferredPrompt.userChoice;
-      if (choiceResult.outcome === 'accepted') {
-        setIsAppInstalled(true);
-      }
-      setDeferredPrompt(null);
-    } else {
-      // Se não tiver o prompt nativo imediato (ex: iOS Safari ou Chrome desktop), abre o guia
-      setShowInstallGuide(true);
-    }
   };
 
   const handleShare = (event: ChurchEvent) => {
@@ -151,7 +121,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           
           {/* Logo Oficial da Igreja (Fundo Transparente) */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-3">
             <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center shrink-0">
               <img 
                 src="/logo.png" 
@@ -164,18 +134,39 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                 Nova Aliança Esperança
               </span>
               <span className="text-[10px] sm:text-[11px] font-bold text-sky-400 block leading-tight">
-                Uma igreja para pessoas reais
+                João Pessoa / PB
               </span>
             </div>
           </div>
 
           {/* Links Desktop */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-4">
+            <a
+              href="#sobre"
+              className="text-xs text-zinc-300 hover:text-sky-300 font-semibold transition"
+            >
+              Sobre Nós
+            </a>
+
+            <a
+              href="#missao-visao"
+              className="text-xs text-zinc-300 hover:text-sky-300 font-semibold transition"
+            >
+              Missão & Visão
+            </a>
+
+            <a
+              href="#pilares"
+              className="text-xs text-zinc-300 hover:text-sky-300 font-semibold transition"
+            >
+              Os 7 Pilares
+            </a>
+
             <a
               href="#programacao"
-              className="px-3 py-1.5 text-xs text-zinc-300 hover:text-sky-300 font-semibold transition"
+              className="text-xs text-zinc-300 hover:text-sky-300 font-semibold transition"
             >
-              Programação & Cultos
+              Cultos & Eventos
             </a>
 
             <a
@@ -208,17 +199,6 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
               <span>Como Chegar</span>
             </a>
 
-            {!isAppInstalled && (
-              <button
-                onClick={handleInstallApp}
-                className="px-3.5 py-2 rounded-xl bg-sky-950/70 hover:bg-sky-900 border border-sky-500/40 text-sky-200 hover:text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
-                title="Instalar Aplicativo da Igreja no seu celular ou computador"
-              >
-                <Download className="w-3.5 h-3.5 text-sky-400" />
-                <span>Baixar App</span>
-              </button>
-            )}
-
             {onGoToAdmin && (
               <button
                 onClick={onGoToAdmin}
@@ -231,31 +211,58 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
             )}
           </div>
 
-          {/* Botões Mobile (Menu Hambúrguer + Botão Instalar App Rápido) */}
+          {/* Botão Mobile Hambúrguer */}
           <div className="flex lg:hidden items-center gap-2">
-            {!isAppInstalled && (
+            {onGoToAdmin && (
               <button
-                onClick={handleInstallApp}
-                className="px-2.5 py-1.5 rounded-xl bg-sky-950 border border-sky-500/50 text-sky-300 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                onClick={onGoToAdmin}
+                className="p-2 rounded-xl bg-blue-950 border border-blue-500/40 text-sky-200 cursor-pointer"
+                title="Área Restrita"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span className="text-[11px]">App</span>
+                <ShieldCheck className="w-4 h-4" />
               </button>
             )}
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white cursor-pointer"
-              aria-label="Abrir menu"
+              aria-label="Menu de Navegação"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
 
-        {/* Menu Gaveta Mobile Expandido */}
+        {/* Menu Mobile Expandido */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-zinc-800/80 bg-zinc-950/95 px-4 py-4 space-y-3 animate-in slide-in-from-top-2 duration-150">
+          <div className="lg:hidden border-t border-zinc-800/80 bg-zinc-950/98 px-4 py-4 space-y-2.5 animate-in slide-in-from-top-2 duration-150">
+            <a
+              href="#sobre"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-zinc-900/80 text-zinc-200 text-sm font-semibold"
+            >
+              <Church className="w-4 h-4 text-sky-400" />
+              <span>Sobre Nós</span>
+            </a>
+
+            <a
+              href="#missao-visao"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-zinc-900/80 text-zinc-200 text-sm font-semibold"
+            >
+              <Compass className="w-4 h-4 text-sky-400" />
+              <span>Missão, Visão e Propósito</span>
+            </a>
+
+            <a
+              href="#pilares"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-zinc-900/80 text-zinc-200 text-sm font-semibold"
+            >
+              <Layers className="w-4 h-4 text-sky-400" />
+              <span>Os 7 Pilares</span>
+            </a>
+
             <a
               href="#programacao"
               onClick={() => setMobileMenuOpen(false)}
@@ -297,83 +304,27 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                 <span>YouTube</span>
               </a>
             </div>
-
-            {!isAppInstalled && (
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  handleInstallApp();
-                }}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-sky-900/60 border border-sky-500/50 text-sky-200 text-xs font-bold cursor-pointer"
-              >
-                <Smartphone className="w-4 h-4 text-sky-400" />
-                <span>Baixar Aplicativo da Igreja</span>
-              </button>
-            )}
-
-            {onGoToAdmin && (
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onGoToAdmin();
-                }}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-700 to-sky-600 text-white text-xs font-bold shadow-md cursor-pointer"
-              >
-                <ShieldCheck className="w-4 h-4 text-sky-200" />
-                <span>Área Restrita da Liderança</span>
-              </button>
-            )}
           </div>
         )}
       </nav>
 
       {/* Hero Section com Banner Oficial Panorâmico */}
-      <section className="relative overflow-hidden pt-4 sm:pt-8 pb-12 sm:pb-16 border-b border-blue-900/30 bg-gradient-to-b from-blue-950/30 via-zinc-950 to-zinc-950">
+      <section className="relative overflow-hidden pt-4 sm:pt-8 pb-10 sm:pb-14 border-b border-blue-900/30 bg-gradient-to-b from-blue-950/30 via-zinc-950 to-zinc-950">
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent"></div>
         
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10 space-y-6 sm:space-y-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10 space-y-6">
           
           {/* Banner Oficial Panorâmico */}
           <div className="rounded-2xl sm:rounded-3xl overflow-hidden border border-blue-500/30 shadow-2xl shadow-blue-950/40 relative group">
             <img 
               src="/banner.png" 
-              alt="Nova Aliança Esperança - Uma igreja para pessoas reais" 
+              alt="Nova Aliança Esperança" 
               className="w-full h-auto object-cover max-h-[460px] transition duration-700 group-hover:scale-[1.01]"
             />
           </div>
 
-          {/* Destaques e Visão da Igreja (7 Quadrados incluindo Igreja de Revelação) */}
-          <div>
-            <div className="text-center pb-3">
-              <span className="text-[11px] font-bold text-sky-400 uppercase tracking-widest">
-                Nossos Pilares & Visão
-              </span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3">
-              {[
-                { icon: '❤️', label: 'AMAR A DEUS' },
-                { icon: '👥', label: 'AMAR PESSOAS' },
-                { icon: '📖', label: 'VIVER A PALAVRA' },
-                { icon: '🔥', label: 'EXPERIMENTAR O PODER' },
-                { icon: '🕊️', label: 'VIVER EM SANTIDADE' },
-                { icon: '🎯', label: 'CAMINHAR EM PROPÓSITO' },
-                { icon: '✨', label: 'IGREJA DE REVELAÇÃO' },
-              ].map((v, i) => (
-                <div 
-                  key={i} 
-                  className="bg-zinc-900/80 border border-blue-900/40 rounded-2xl p-3 text-center space-y-1.5 hover:border-sky-500/50 hover:bg-zinc-900 transition flex flex-col items-center justify-center shadow-sm"
-                >
-                  <span className="text-xl sm:text-2xl block">{v.icon}</span>
-                  <span className="text-[11px] font-extrabold text-zinc-200 block tracking-tight leading-tight">
-                    {v.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Botões de Ação Principais e Redes Sociais */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          {/* Botões de Ação Principais */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
             <a
               href="#programacao"
               className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 text-white text-xs sm:text-sm font-bold shadow-xl shadow-blue-950/60 flex items-center justify-center gap-2.5 transition"
@@ -390,25 +341,362 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
               className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 hover:text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2"
             >
               <Navigation className="w-4 h-4 text-sky-400" />
-              <span>Como Chegar (Google Maps)</span>
+              <span>Localização no Google Maps</span>
               <ExternalLink className="w-3.5 h-3.5 text-zinc-500" />
             </a>
 
-            {!isAppInstalled && (
-              <button
-                onClick={handleInstallApp}
-                className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-sky-950/60 hover:bg-sky-900 border border-sky-500/40 text-sky-200 text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Smartphone className="w-4 h-4 text-sky-400" />
-                <span>Instalar Aplicativo</span>
-              </button>
-            )}
+            <a
+              href="#sobre"
+              className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-blue-900/60 text-sky-300 text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2"
+            >
+              <Church className="w-4 h-4 text-sky-400" />
+              <span>Conhecer Nossa História</span>
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Programação dos Cultos & Blog de Eventos (inChurch) */}
-      <section id="programacao" className="py-12 sm:py-18 border-b border-zinc-800/80 max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-8 sm:space-y-10">
+      {/* ========================================================================= */}
+      {/* SEÇÃO: SOBRE NÓS (UMA HISTÓRIA DE FÉ, CUIDADO E MISSÃO)                   */}
+      {/* ========================================================================= */}
+      <section id="sobre" className="py-14 sm:py-20 border-b border-zinc-800/80 bg-zinc-900/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            
+            {/* Texto Principal */}
+            <div className="lg:col-span-7 space-y-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-sky-400 text-xs font-bold border border-blue-500/20">
+                <Church className="w-3.5 h-3.5" />
+                <span>Sobre a Nova Aliança</span>
+              </div>
+
+              <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                Uma história construída pela fé, pelo cuidado e pela missão
+              </h2>
+
+              <div className="space-y-4 text-zinc-300 text-sm sm:text-base leading-relaxed">
+                <p>
+                  A <strong className="text-white">Nova Aliança Global</strong> nasceu em 2005, em Imperatriz, Maranhão, por meio do chamado ministerial dos pastores <strong className="text-sky-300">Raimundo Nonato e Maria de Jesus</strong>.
+                </p>
+
+                <p>
+                  Desde o início, nossa identidade tem sido fundamentada em amar a Deus e amar pessoas. Esse propósito nos levou a crescer, formar novas lideranças, plantar igrejas e desenvolver projetos que alcançam pessoas no Brasil e em outras nações.
+                </p>
+
+                <p>
+                  Mais do que uma igreja local, a Nova Aliança Global é uma estrutura de comunhão, direção e suporte para as igrejas e frentes ministeriais que integram a família Nova Aliança.
+                </p>
+
+                <p>
+                  Buscamos viver pela Palavra, pelo poder de Deus, pela santidade, pela liberdade e pela revelação. Nossa visão é ser uma igreja pequena o suficiente para cuidar de cada pessoa e grande o suficiente para impactar nações.
+                </p>
+
+                <p className="font-semibold text-zinc-200">
+                  O ministério completou <span className="text-sky-400">20 anos em julho de 2025</span>, reafirmando seu compromisso com evangelização, discipulado, missões e compaixão social.
+                </p>
+
+                <p className="text-xs text-zinc-500 italic pt-1">
+                  Fonte institucional e registro da celebração dos 20 anos do ministério.
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => setShowMatrizModal(true)}
+                  className="inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-700 to-sky-600 hover:from-blue-600 hover:to-sky-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-950/50 transition cursor-pointer"
+                >
+                  <Info className="w-4 h-4 text-sky-200" />
+                  <span>Ver Detalhes da Sede Matriz</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Card Lateral com os Pontos Principais da Sede Matriz */}
+            <div className="lg:col-span-5 bg-gradient-to-b from-blue-950/40 via-zinc-900 to-zinc-900 border border-blue-900/50 rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl">
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600/20 text-sky-400 flex items-center justify-center font-bold">
+                    <Church className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white">Sede Matriz Global</h3>
+                    <p className="text-[11px] text-zinc-400">Origem & Fundamentos</p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold text-sky-400 bg-sky-950/80 px-2.5 py-1 rounded-full border border-sky-500/30">
+                  20 Anos
+                </span>
+              </div>
+
+              {/* Lista dos 4 Pilares da Matriz */}
+              <div className="space-y-3.5">
+                <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800/80">
+                  <div className="w-10 h-10 rounded-xl bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-sky-300 shrink-0">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white block">Fundação</span>
+                    <span className="text-xs text-zinc-400">2005, em Imperatriz – MA</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800/80">
+                  <div className="w-10 h-10 rounded-xl bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-sky-300 shrink-0">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white block">Fundadores</span>
+                    <span className="text-xs text-zinc-400">Pr. Raimundo Nonato e Pra. Maria de Jesus</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800/80">
+                  <div className="w-10 h-10 rounded-xl bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-sky-300 shrink-0">
+                    <Globe className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white block">Alcance</span>
+                    <span className="text-xs text-zinc-400">Igrejas e frentes ministeriais no Brasil e em outras nações</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800/80">
+                  <div className="w-10 h-10 rounded-xl bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-sky-300 shrink-0">
+                    <Cake className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white block">20 anos de ministério</span>
+                    <span className="text-xs text-zinc-400">Celebrados em julho de 2025</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowMatrizModal(true)}
+                className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-sky-300 text-xs font-bold border border-zinc-700 transition cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>Abrir Informações Completas</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* SEÇÃO: MISSÃO, VISÃO E PROPÓSITO                                         */}
+      {/* ========================================================================= */}
+      <section id="missao-visao" className="py-16 sm:py-20 border-b border-zinc-800/80 max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-10">
+        <div className="text-center space-y-2 max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-sky-400 text-xs font-bold border border-blue-500/20">
+            <Compass className="w-3.5 h-3.5" />
+            <span>MISSÃO, VISÃO E PROPÓSITO</span>
+          </div>
+          <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+            O que nos move e para onde caminhamos
+          </h2>
+          <p className="text-xs sm:text-sm text-zinc-400">
+            As frases abaixo foram organizadas editorialmente a partir dos conteúdos oficiais encontrados.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          
+          {/* Missão */}
+          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-7 space-y-3.5 transition group shadow-sm hover:shadow-xl hover:shadow-blue-950/30 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 group-hover:scale-110 transition duration-300">
+                <Flag className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-white tracking-tight">
+                Missão
+              </h3>
+              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                Glorificar Jesus, manifestar o Reino de Deus por meio de obras de compaixão e proclamar o Evangelho até os confins da terra.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-zinc-800/60 text-[11px] font-bold text-sky-400">
+              Proclamar & Glorificar
+            </div>
+          </div>
+
+          {/* Visão */}
+          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-7 space-y-3.5 transition group shadow-sm hover:shadow-xl hover:shadow-blue-950/30 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-110 transition duration-300">
+                <Telescope className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-white tracking-tight">
+                Visão
+              </h3>
+              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                Ser uma igreja pequena para cuidar de cada pessoa e grande para impactar nações.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-zinc-800/60 text-[11px] font-bold text-sky-400">
+              Cuidar & Impactar
+            </div>
+          </div>
+
+          {/* Identidade */}
+          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-7 space-y-3.5 transition group shadow-sm hover:shadow-xl hover:shadow-blue-950/30 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 group-hover:scale-110 transition duration-300">
+                <Heart className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-white tracking-tight">
+                Identidade
+              </h3>
+              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                Amar a Deus e amar pessoas.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-zinc-800/60 text-[11px] font-bold text-sky-400">
+              Amor Incondicional
+            </div>
+          </div>
+
+          {/* Propósito */}
+          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-7 space-y-3.5 transition group shadow-sm hover:shadow-xl hover:shadow-blue-950/30 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition duration-300">
+                <Sprout className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-white tracking-tight">
+                Propósito
+              </h3>
+              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                Formar discípulos de Jesus, desenvolver líderes, plantar igrejas e promover transformação espiritual e social nas comunidades e nações alcançadas pelo ministério.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-zinc-800/60 text-[11px] font-bold text-sky-400">
+              Transformação & Liderança
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* SEÇÃO: OS SETE PILARES DA NOVA ALIANÇA                                   */}
+      {/* ========================================================================= */}
+      <section id="pilares" className="py-16 sm:py-20 border-b border-zinc-800/80 bg-zinc-950 max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-10">
+        <div className="text-center space-y-2 max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-sky-400 text-xs font-bold border border-blue-500/20">
+            <Layers className="w-3.5 h-3.5" />
+            <span>OS SETE PILARES DA NOVA ALIANÇA</span>
+          </div>
+          <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+            O que sustenta nossa fé e nossas decisões
+          </h2>
+          <p className="text-xs sm:text-sm text-zinc-400">
+            Nossa identidade é sustentada por sete pilares que direcionam nossa fé, nossas decisões e nossa forma de servir a Deus e às pessoas.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          
+          {/* Pilar 1 */}
+          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+              <HeartHandshake className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-white tracking-tight">
+              Lugar de amar a Deus
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Buscamos desenvolver uma vida de intimidade, adoração, obediência e entrega ao Senhor.
+            </p>
+          </div>
+
+          {/* Pilar 2 */}
+          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+              <Heart className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-white tracking-tight">
+              Lugar de amar pessoas
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Acreditamos no cuidado, no acolhimento, no serviço e na valorização de cada pessoa.
+            </p>
+          </div>
+
+          {/* Pilar 3 */}
+          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-white tracking-tight">
+              Ser uma igreja da Palavra
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              A Bíblia é o fundamento da nossa fé, do nosso ensino e da nossa prática cristã.
+            </p>
+          </div>
+
+          {/* Pilar 4 */}
+          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+              <Zap className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-white tracking-tight">
+              Ser uma igreja do poder
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Cremos na atuação do Espírito Santo, em cura, libertação, milagres e transformação de vidas.
+            </p>
+          </div>
+
+          {/* Pilar 5 */}
+          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+              <Shield className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-white tracking-tight">
+              Ser uma igreja de santidade
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Buscamos uma vida separada para Deus, marcada pela integridade e pela obediência.
+            </p>
+          </div>
+
+          {/* Pilar 6 */}
+          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+              <Feather className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-white tracking-tight">
+              Ser uma igreja de liberdade
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Vivemos a liberdade do Espírito, sem legalismo, valorizando uma adoração sincera e verdadeira.
+            </p>
+          </div>
+
+          {/* Pilar 7 */}
+          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20 md:col-span-2 lg:col-span-2">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+              <Eye className="w-5 h-5" />
+            </div>
+            <h3 className="text-base font-bold text-white tracking-tight">
+              Ser uma igreja de revelação
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Buscamos conhecer e obedecer à vontade de Deus por meio da Palavra e da direção do Espírito Santo.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* SEÇÃO: PROGRAMAÇÃO DOS CULTOS & BLOG DE EVENTOS (INCHURCH)               */}
+      {/* ========================================================================= */}
+      <section id="programacao" className="py-16 sm:py-20 border-b border-zinc-800/80 max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-10">
         <div className="text-center space-y-2 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-sky-400 text-xs font-bold border border-blue-500/20">
             <BookOpen className="w-3.5 h-3.5" />
@@ -530,8 +818,10 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
         )}
       </section>
 
-      {/* Localização & Contato Oficial */}
-      <section id="localizacao" className="py-12 sm:py-16 border-t border-zinc-800/80 bg-zinc-900/40">
+      {/* ========================================================================= */}
+      {/* SEÇÃO: LOCALIZAÇÃO & CONTATO OFICIAL                                     */}
+      {/* ========================================================================= */}
+      <section id="localizacao" className="py-14 sm:py-20 border-t border-zinc-800/80 bg-zinc-900/40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           
           <div className="space-y-4">
@@ -550,25 +840,17 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
               Um ambiente de acolhimento, restauração e adoração para toda a sua família.
             </p>
 
-            <div className="pt-2 flex flex-wrap gap-3">
+            <div className="pt-2">
               <a
                 href={GOOGLE_MAPS_LOCATION_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition shadow-lg shadow-blue-950/40"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold transition shadow-lg shadow-blue-950/40"
               >
                 <Navigation className="w-4 h-4" />
                 <span>Abrir Rota no Google Maps</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
-
-              <button
-                onClick={handleInstallApp}
-                className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs font-bold transition cursor-pointer"
-              >
-                <Download className="w-4 h-4 text-sky-400" />
-                <span>Baixar Aplicativo</span>
-              </button>
             </div>
           </div>
 
@@ -680,70 +962,96 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
           </a>
         </div>
 
-        <p>Uma igreja para pessoas reais &copy; {new Date().getFullYear()} — João Pessoa / PB</p>
+        <p>&copy; {new Date().getFullYear()} Igreja Nova Aliança Esperança — João Pessoa / PB</p>
         <p className="text-[11px] text-zinc-600">
           R. Joaquim Monteiro de Franca, 457 - Gramame / Colinas do Sul
         </p>
       </footer>
 
       {/* ========================================================================= */}
-      {/* GUIA / MODAL DE INSTALAÇÃO DO PWA (ANDROID / IOS / DESKTOP)              */}
+      {/* MODAL: INFORMAÇÕES DA SEDE MATRIZ (NOVA ALIANÇA GLOBAL)                   */}
       {/* ========================================================================= */}
-      {showInstallGuide && (
+      {showMatrizModal && (
         <div 
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setShowInstallGuide(false)}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setShowMatrizModal(false)}
         >
           <div 
-            className="bg-zinc-900 border border-blue-900/60 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95"
+            className="bg-zinc-900 border border-blue-900/60 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-              <div className="flex items-center gap-2">
-                <Smartphone className="w-5 h-5 text-sky-400" />
-                <h3 className="text-base font-bold text-white">Instalar Aplicativo da Igreja</h3>
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-600/20 border border-blue-500/40 text-sky-400 flex items-center justify-center">
+                  <Church className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white">Sede Matriz Global</h3>
+                  <p className="text-xs text-sky-400 font-semibold">Nova Aliança Global — Imperatriz / MA</p>
+                </div>
               </div>
               <button 
-                onClick={() => setShowInstallGuide(false)}
-                className="p-1 rounded-lg text-zinc-400 hover:text-white"
+                onClick={() => setShowMatrizModal(false)}
+                className="p-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs text-zinc-300">
-              <p className="leading-relaxed">
-                Você pode ter o aplicativo oficial da <strong className="text-white">Nova Aliança Esperança</strong> diretamente na tela inicial do seu celular, funcionando como um app nativo!
-              </p>
-
-              <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-2">
-                <p className="font-bold text-sky-300 flex items-center gap-1.5">
-                  <span>📱 No iPhone / Safari:</span>
-                </p>
-                <ol className="list-decimal list-inside space-y-1 text-zinc-400 pl-1">
-                  <li>Toque no botão <strong>Compartilhar</strong> (ícone de quadrado com seta para cima).</li>
-                  <li>Role para baixo e selecione <strong>"Adicionar à Tela de Início"</strong>.</li>
-                  <li>Toque em <strong>Adicionar</strong> no canto superior direito.</li>
-                </ol>
+            {/* Quadro com os 4 Pilares da Matriz (Visual idêntico à imagem de referência) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-blue-950/30 border border-blue-900/50 space-y-4">
+              
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-2xl bg-blue-900/80 border border-blue-700/60 flex items-center justify-center text-sky-300 shrink-0 shadow-md">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-sm font-black text-white block">Fundação</span>
+                  <span className="text-xs sm:text-sm text-zinc-300">2005, em Imperatriz – MA</span>
+                </div>
               </div>
 
-              <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-2">
-                <p className="font-bold text-emerald-300 flex items-center gap-1.5">
-                  <span>🤖 No Android / Chrome:</span>
-                </p>
-                <ol className="list-decimal list-inside space-y-1 text-zinc-400 pl-1">
-                  <li>Toque nos <strong>três pontinhos (⋮)</strong> no canto superior direito do navegador.</li>
-                  <li>Selecione <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.</li>
-                  <li>Confirme para baixar o ícone oficial da igreja.</li>
-                </ol>
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-2xl bg-blue-900/80 border border-blue-700/60 flex items-center justify-center text-sky-300 shrink-0 shadow-md">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-sm font-black text-white block">Fundadores</span>
+                  <span className="text-xs sm:text-sm text-zinc-300">Pr. Raimundo Nonato e Pra. Maria de Jesus</span>
+                </div>
               </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-2xl bg-blue-900/80 border border-blue-700/60 flex items-center justify-center text-sky-300 shrink-0 shadow-md">
+                  <Globe className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-sm font-black text-white block">Alcance</span>
+                  <span className="text-xs sm:text-sm text-zinc-300">Igrejas e frentes ministeriais no Brasil e em outras nações</span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-2xl bg-blue-900/80 border border-blue-700/60 flex items-center justify-center text-sky-300 shrink-0 shadow-md">
+                  <Cake className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-sm font-black text-white block">20 anos de ministério</span>
+                  <span className="text-xs sm:text-sm text-zinc-300">Celebrados em julho de 2025</span>
+                </div>
+              </div>
+
             </div>
 
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              A Nova Aliança Esperança em João Pessoa / PB é fruto dessa visão de expansão do Reino, plantação de igrejas e comunhão com a família Nova Aliança Global.
+            </p>
+
             <button
-              onClick={() => setShowInstallGuide(false)}
-              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition cursor-pointer"
+              onClick={() => setShowMatrizModal(false)}
+              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition shadow-lg shadow-blue-950/60 cursor-pointer"
             >
-              Entendi, obrigado!
+              Fechar Detalhes
             </button>
           </div>
         </div>
