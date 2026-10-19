@@ -180,3 +180,17 @@ export interface ChurchEvent {
   highlighted?: boolean;
   synced_at?: string;
 }
+
+export type UserRole = 'admin' | 'pastor' | 'supervisor' | 'leader' | 'louvor';
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  network?: string; // Ex: 'Jovens', 'Adultos', 'Adolescentes', 'Mulheres', etc.
+  supervisorName?: string;
+  isLouvorMember?: boolean; // Usuário também pode pertencer ao louvor
+  photo?: string;
+}

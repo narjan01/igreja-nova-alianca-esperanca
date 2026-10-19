@@ -5,10 +5,11 @@ import { AgendaTab } from './components/AgendaTab';
 import { GitHubTab } from './components/GitHubTab';
 import { ChurchLandingPage } from './components/ChurchLandingPage';
 import { AdminPanel } from './components/AdminPanel';
+import { LoginPage } from './components/LoginPage';
 import { PixModal } from './components/PixModal';
 import { RelatorioModal } from './components/RelatorioModal';
-import { AdminModal } from './components/AdminModal';
-import { PixInfo } from './types';
+import { PixInfo, AuthUser } from './types';
+import { AuthService } from './lib/authService';
 import { DataStore } from './lib/dataStore';
 import { 
   Music, 
@@ -18,20 +19,20 @@ import {
   Shield, 
   ShieldCheck, 
   Church,
-  ArrowLeft
+  ArrowLeft,
+  LogOut
 } from 'lucide-react';
 
 export default function App() {
-  const [viewMode, setViewMode] = useState<'church' | 'admin' | 'louvor'>('church');
+  const [viewMode, setViewMode] = useState<'church' | 'login' | 'admin' | 'louvor'>('church');
   const [activeTab, setActiveTab] = useState<'financeiro' | 'confra' | 'agenda' | 'github'>('financeiro');
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => AuthService.getCurrentUser());
   const [currentPix, setCurrentPix] = useState<PixInfo | null>(null);
   const [relatorioModal, setRelatorioModal] = useState<{ open: boolean; title: string; conteudo: string }>({
     open: false,
     title: '',
     conteudo: '',
   });
-  const [showAdminModal, setShowAdminModal] = useState(false);
 
   useEffect(() => {
     // Detectar parâmetros ou subdomínio
@@ -39,8 +40,12 @@ export default function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const viewParam = urlParams.get('view');
 
-    if (viewParam === 'admin') {
-      setShowAdminModal(true);
+    if (viewParam === 'admin' || viewParam === 'login') {
+      if (currentUser) {
+        setViewMode('admin');
+      } else {
+        setViewMode('login');
+      }
     } else if (viewParam === 'louvor' || hostname.startsWith('louvor.')) {
       setViewMode('louvor');
     } else {
@@ -49,16 +54,22 @@ export default function App() {
   }, []);
 
   const handleOpenAdmin = () => {
-    if (isAdmin) {
+    if (currentUser) {
       setViewMode('admin');
     } else {
-      setShowAdminModal(true);
+      setViewMode('login');
     }
   };
 
-  const handleAdminSuccess = () => {
-    setIsAdmin(true);
+  const handleLoginSuccess = (user: AuthUser) => {
+    setCurrentUser(user);
     setViewMode('admin');
+  };
+
+  const handleLogout = () => {
+    AuthService.logout();
+    setCurrentUser(null);
+    setViewMode('church');
   };
 
   const handleConfirmPix = (pix: PixInfo) => {
@@ -77,33 +88,47 @@ export default function App() {
   // 1. TELA PRINCIPAL: SITE PÚBLICO DA IGREJA
   if (viewMode === 'church') {
     return (
-      <>
-        <ChurchLandingPage 
-          onGoToAdmin={handleOpenAdmin}
-        />
-        <AdminModal
-          isOpen={showAdminModal}
-          onClose={() => setShowAdminModal(false)}
-          onSuccess={handleAdminSuccess}
-        />
-      </>
-    );
-  }
-
-  // 2. TELA RESTRITA: PAINEL ADMINISTRATIVO (MEMBROS E CÉLULAS)
-  if (viewMode === 'admin') {
-    return (
-      <AdminPanel
-        onBackToSite={() => setViewMode('church')}
-        onLogout={() => {
-          setIsAdmin(false);
-          setViewMode('church');
-        }}
+      <ChurchLandingPage 
+        onGoToAdmin={handleOpenAdmin}
       />
     );
   }
 
-  // 3. TELA DO PORTAL DE LOUVOR (MÚSICOS E ESCALAS)
+  // 2. PÁGINA DE LOGIN COM USUÁRIO E SENHA
+  if (viewMode === 'login') {
+    return (
+      <LoginPage
+        onLoginSuccess={handleLoginSuccess}
+        onBackToSite={() => setViewMode('church')}
+      />
+    );
+  }
+
+  // 3. TELA RESTRITA: PAINEL ADMINISTRATIVO COM OS 4 MÓDULOS E CONTROLE DE ACESSO
+  if (viewMode === 'admin' && currentUser) {
+    return (
+      <AdminPanel
+        currentUser={currentUser}
+        onBackToSite={() => setViewMode('church')}
+        onLogout={handleLogout}
+        onSwitchUser={(user) => setCurrentUser(user)}
+      />
+    );
+  }
+
+  // Se por algum motivo estiver em admin sem usuário, redirecionar para login
+  if (viewMode === 'admin' && !currentUser) {
+    return (
+      <LoginPage
+        onLoginSuccess={handleLoginSuccess}
+        onBackToSite={() => setViewMode('church')}
+      />
+    );
+  }
+
+  // 4. MÓDULO 4: MINISTÉRIO DE LOUVOR (Músicos, Escalas e Mensalidades)
+  const isLouvorAdmin = currentUser ? (currentUser.role === 'admin' || currentUser.role === 'pastor') : false;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-purple-500/30 selection:text-purple-200">
       {/* Top Header */}
@@ -112,10 +137,10 @@ export default function App() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setViewMode('church')}
-              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold"
+              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
               title="Voltar ao Site da Igreja"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4 text-sky-400" />
               <span className="hidden sm:inline">Site da Igreja</span>
             </button>
 
@@ -139,8 +164,18 @@ export default function App() {
               className="px-3 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 hover:text-white text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
-              <span>Painel de Membros & Células</span>
+              <span>Painel de Gestão</span>
             </button>
+
+            {currentUser && (
+              <button
+                onClick={handleLogout}
+                className="p-1.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 text-xs font-bold transition cursor-pointer"
+                title="Sair"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -149,7 +184,7 @@ export default function App() {
           <nav className="flex space-x-1 sm:space-x-2 border-t border-zinc-800/60 py-2 overflow-x-auto scrollbar-none">
             <button
               onClick={() => setActiveTab('financeiro')}
-              className={`flex items-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+              className={`flex items-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                 activeTab === 'financeiro'
                   ? 'bg-purple-600 text-white shadow-md shadow-purple-950/40'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
@@ -161,7 +196,7 @@ export default function App() {
 
             <button
               onClick={() => setActiveTab('confra')}
-              className={`flex items-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+              className={`flex items-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                 activeTab === 'confra'
                   ? 'bg-amber-500 text-zinc-950 shadow-md shadow-amber-950/40'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
@@ -173,7 +208,7 @@ export default function App() {
 
             <button
               onClick={() => setActiveTab('agenda')}
-              className={`flex items-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+              className={`flex items-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                 activeTab === 'agenda'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/40'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
@@ -183,17 +218,19 @@ export default function App() {
               Agenda & Escala LouveApp
             </button>
 
-            <button
-              onClick={() => setActiveTab('github')}
-              className={`flex items-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-                activeTab === 'github'
-                  ? 'bg-zinc-700 text-white shadow-md'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
-              }`}
-            >
-              <Shield className="w-4 h-4" />
-              Integrações
-            </button>
+            {isLouvorAdmin && (
+              <button
+                onClick={() => setActiveTab('github')}
+                className={`flex items-center gap-2 py-2 px-3.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                  activeTab === 'github'
+                    ? 'bg-zinc-700 text-white shadow-md'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                Integrações
+              </button>
+            )}
           </nav>
         </div>
       </header>
@@ -202,7 +239,7 @@ export default function App() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full flex-1">
         {activeTab === 'financeiro' && (
           <FinanceiroTab
-            isAdmin={isAdmin}
+            isAdmin={isLouvorAdmin}
             onOpenPix={(pix) => setCurrentPix(pix)}
             onOpenRelatorio={openRelatorio}
           />
@@ -210,7 +247,7 @@ export default function App() {
 
         {activeTab === 'confra' && (
           <ConfraTab
-            isAdmin={isAdmin}
+            isAdmin={isLouvorAdmin}
             onOpenPix={(pix) => setCurrentPix(pix)}
             onOpenRelatorio={openRelatorio}
           />
@@ -218,12 +255,12 @@ export default function App() {
 
         {activeTab === 'agenda' && (
           <AgendaTab
-            isAdmin={isAdmin}
+            isAdmin={isLouvorAdmin}
             onOpenRelatorio={openRelatorio}
           />
         )}
 
-        {activeTab === 'github' && <GitHubTab />}
+        {activeTab === 'github' && isLouvorAdmin && <GitHubTab />}
       </main>
 
       {/* Modais Globais */}
@@ -231,7 +268,7 @@ export default function App() {
         pix={currentPix}
         onClose={() => setCurrentPix(null)}
         onConfirmSuccess={handleConfirmPix}
-        isAdmin={isAdmin}
+        isAdmin={isLouvorAdmin}
       />
 
       <RelatorioModal
@@ -239,12 +276,6 @@ export default function App() {
         title={relatorioModal.title}
         conteudo={relatorioModal.conteudo}
         onClose={() => setRelatorioModal({ open: false, title: '', conteudo: '' })}
-      />
-
-      <AdminModal
-        isOpen={showAdminModal}
-        onClose={() => setShowAdminModal(false)}
-        onSuccess={handleAdminSuccess}
       />
     </div>
   );

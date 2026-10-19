@@ -1,26 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { ChurchCell } from '../types';
+import { ChurchCell, AuthUser } from '../types';
 import { ChurchDataService } from '../lib/churchDataService';
-import { 
-  Home, 
-  Search, 
-  MapPin, 
-  Phone, 
-  ExternalLink, 
-  Users, 
-  Sparkles, 
-  Navigation, 
-  Calendar, 
-  RefreshCw,
-  Mail,
-  ShieldCheck
-} from 'lucide-react';
 
 interface CellsManagementProps {
   onBack?: () => void;
+  currentUser?: AuthUser;
 }
 
-export const CellsManagement: React.FC<CellsManagementProps> = ({ onBack }) => {
+export const CellsManagement: React.FC<CellsManagementProps> = ({ onBack, currentUser }) => {
   const [cells, setCells] = useState<ChurchCell[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -37,10 +23,23 @@ export const CellsManagement: React.FC<CellsManagementProps> = ({ onBack }) => {
     setLoading(false);
   };
 
-  // Obter categorias únicas
-  const categories = ['all', ...Array.from(new Set(cells.map((c) => c.category).filter(Boolean)))];
+  // Se o usuário logado for supervisor, restringe às suas células
+  const isSupervisor = currentUser?.role === 'supervisor';
+  const supervisorCells = cells.filter((c) => {
+    if (!isSupervisor) return true;
+    if (currentUser?.network && c.category?.toLowerCase().includes(currentUser.network.toLowerCase())) {
+      return true;
+    }
+    if (currentUser?.supervisorName && c.supervisors?.some(s => s.name.toLowerCase().includes(currentUser.supervisorName!.toLowerCase()))) {
+      return true;
+    }
+    return !currentUser?.network && !currentUser?.supervisorName;
+  });
 
-  const filteredCells = cells.filter((c) => {
+  // Obter categorias únicas
+  const categories = ['all', ...Array.from(new Set(supervisorCells.map((c) => c.category).filter(Boolean)))];
+
+  const filteredCells = supervisorCells.filter((c) => {
     const matchesSearch =
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       (c.address && c.address.toLowerCase().includes(search.toLowerCase())) ||
