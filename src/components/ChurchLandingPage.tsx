@@ -13,8 +13,8 @@ import {
   Share2, 
   X, 
   BookOpen, 
-  ChevronDown, 
-  ChevronUp, 
+  ChevronLeft,
+  ChevronRight, 
   Navigation, 
   Youtube, 
   Instagram, 
@@ -32,7 +32,8 @@ import {
   Cake,
   Users,
   Compass,
-  Info
+  Info,
+  Sparkles
 } from 'lucide-react';
 
 interface ChurchLandingPageProps {
@@ -43,15 +44,21 @@ const GOOGLE_MAPS_LOCATION_URL = "https://share.google/jDtcY6Ae8UcT0mPAC";
 const YOUTUBE_URL = "https://www.youtube.com/@NVAEsperançaJPPB";
 const INSTAGRAM_URL = "https://www.instagram.com/novaaliancaesperancajp/";
 
+type TabType = 'inicio' | 'sobre' | 'missao' | 'pilares';
+
 export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({ 
   onGoToAdmin 
 }) => {
+  const [activeTab, setActiveTab] = useState<TabType>('inicio');
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<ChurchEvent | null>(null);
-  const [showAllEvents, setShowAllEvents] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showMatrizModal, setShowMatrizModal] = useState(false);
+
+  // Estado do Carrossel Deslizante Grande Automático
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     loadEvents();
@@ -97,8 +104,31 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
     return timeA - timeB;
   });
 
-  // Exibir inicialmente 3 e expandir o restante com o botão
-  const visibleEvents = showAllEvents ? currentAndFutureEvents : currentAndFutureEvents.slice(0, 3);
+  // Ajustar o slide caso o número de eventos mude
+  useEffect(() => {
+    if (currentSlide >= currentAndFutureEvents.length && currentAndFutureEvents.length > 0) {
+      setCurrentSlide(0);
+    }
+  }, [currentAndFutureEvents.length]);
+
+  // Transição automática de 1 por 1 a cada 5 segundos
+  useEffect(() => {
+    if (currentAndFutureEvents.length <= 1 || isPaused || activeTab !== 'inicio') return;
+    
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % currentAndFutureEvents.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [currentAndFutureEvents.length, isPaused, activeTab]);
+
+  const handlePrevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + currentAndFutureEvents.length) % currentAndFutureEvents.length);
+  };
+
+  const handleNextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % currentAndFutureEvents.length);
+  };
 
   const formatEventDate = (datetimeStr?: string | null) => {
     if (!datetimeStr) return null;
@@ -113,6 +143,8 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
     }).format(d);
   };
 
+  const currentEvent = currentAndFutureEvents[currentSlide] || null;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-blue-500/30 selection:text-blue-200">
       
@@ -121,12 +153,15 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           
           {/* Logo Oficial da Igreja (Fundo Transparente) */}
-          <div className="flex items-center gap-3">
+          <div 
+            onClick={() => setActiveTab('inicio')}
+            className="flex items-center gap-3 cursor-pointer group"
+          >
             <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center shrink-0">
               <img 
                 src="/logo.png" 
                 alt="Logo Nova Aliança Esperança" 
-                className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(29,78,216,0.5)]" 
+                className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(29,78,216,0.5)] group-hover:scale-105 transition duration-300" 
               />
             </div>
             <div>
@@ -139,36 +174,55 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
             </div>
           </div>
 
-          {/* Links Desktop */}
-          <div className="hidden lg:flex items-center gap-4">
-            <a
-              href="#sobre"
-              className="text-xs text-zinc-300 hover:text-sky-300 font-semibold transition"
+          {/* Abas Principais de Navegação (Desktop) */}
+          <div className="hidden lg:flex items-center gap-1.5 bg-zinc-900/90 border border-zinc-800 p-1 rounded-2xl">
+            <button
+              onClick={() => setActiveTab('inicio')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'inicio'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-950/50'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
             >
-              Sobre Nós
-            </a>
+              <span>Início</span>
+            </button>
 
-            <a
-              href="#missao-visao"
-              className="text-xs text-zinc-300 hover:text-sky-300 font-semibold transition"
+            <button
+              onClick={() => setActiveTab('sobre')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'sobre'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-950/50'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
             >
-              Missão & Visão
-            </a>
+              <span>Sobre Nós</span>
+            </button>
 
-            <a
-              href="#pilares"
-              className="text-xs text-zinc-300 hover:text-sky-300 font-semibold transition"
+            <button
+              onClick={() => setActiveTab('missao')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'missao'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-950/50'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
             >
-              Os 7 Pilares
-            </a>
+              <span>Missão & Visão</span>
+            </button>
 
-            <a
-              href="#programacao"
-              className="text-xs text-zinc-300 hover:text-sky-300 font-semibold transition"
+            <button
+              onClick={() => setActiveTab('pilares')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'pilares'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-950/50'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
             >
-              Cultos & Eventos
-            </a>
+              <span>Os 7 Pilares</span>
+            </button>
+          </div>
 
+          {/* Ações e Redes Sociais */}
+          <div className="hidden lg:flex items-center gap-3">
             <a
               href={INSTAGRAM_URL}
               target="_blank"
@@ -235,60 +289,76 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
 
         {/* Menu Mobile Expandido */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-zinc-800/80 bg-zinc-950/98 px-4 py-4 space-y-2.5 animate-in slide-in-from-top-2 duration-150">
-            <a
-              href="#sobre"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-zinc-900/80 text-zinc-200 text-sm font-semibold"
+          <div className="lg:hidden border-t border-zinc-800/80 bg-zinc-950/98 px-4 py-4 space-y-2 animate-in slide-in-from-top-2 duration-150">
+            <button
+              onClick={() => {
+                setActiveTab('inicio');
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                activeTab === 'inicio' ? 'bg-blue-600 text-white' : 'bg-zinc-900/80 text-zinc-200'
+              }`}
+            >
+              <Calendar className="w-4 h-4 text-sky-400" />
+              <span>Início & Programação</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab('sobre');
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                activeTab === 'sobre' ? 'bg-blue-600 text-white' : 'bg-zinc-900/80 text-zinc-200'
+              }`}
             >
               <Church className="w-4 h-4 text-sky-400" />
-              <span>Sobre Nós</span>
-            </a>
+              <span>Sobre Nós (História)</span>
+            </button>
 
-            <a
-              href="#missao-visao"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-zinc-900/80 text-zinc-200 text-sm font-semibold"
+            <button
+              onClick={() => {
+                setActiveTab('missao');
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                activeTab === 'missao' ? 'bg-blue-600 text-white' : 'bg-zinc-900/80 text-zinc-200'
+              }`}
             >
               <Compass className="w-4 h-4 text-sky-400" />
               <span>Missão, Visão e Propósito</span>
-            </a>
+            </button>
 
-            <a
-              href="#pilares"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-zinc-900/80 text-zinc-200 text-sm font-semibold"
+            <button
+              onClick={() => {
+                setActiveTab('pilares');
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                activeTab === 'pilares' ? 'bg-blue-600 text-white' : 'bg-zinc-900/80 text-zinc-200'
+              }`}
             >
               <Layers className="w-4 h-4 text-sky-400" />
               <span>Os 7 Pilares</span>
-            </a>
-
-            <a
-              href="#programacao"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-zinc-900/80 text-zinc-200 text-sm font-semibold"
-            >
-              <BookOpen className="w-4 h-4 text-sky-400" />
-              <span>Programação & Cultos</span>
-            </a>
+            </button>
 
             <a
               href={GOOGLE_MAPS_LOCATION_URL}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-zinc-900/80 text-zinc-200 text-sm font-semibold"
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-zinc-900/80 text-zinc-200 text-sm font-semibold"
             >
               <Navigation className="w-4 h-4 text-sky-400" />
               <span>Como Chegar (Google Maps)</span>
             </a>
 
-            <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800/80">
               <a
                 href={INSTAGRAM_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-zinc-900 border border-pink-900/30 text-pink-300 text-xs font-bold"
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-pink-900/30 text-pink-300 text-xs font-bold"
               >
                 <Instagram className="w-4 h-4" />
                 <span>Instagram</span>
@@ -298,7 +368,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                 href={YOUTUBE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-zinc-900 border border-red-900/30 text-red-300 text-xs font-bold"
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-red-900/30 text-red-300 text-xs font-bold"
               >
                 <Youtube className="w-4 h-4" />
                 <span>YouTube</span>
@@ -308,60 +378,351 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
         )}
       </nav>
 
-      {/* Hero Section com Banner Oficial Panorâmico */}
-      <section className="relative overflow-hidden pt-4 sm:pt-8 pb-10 sm:pb-14 border-b border-blue-900/30 bg-gradient-to-b from-blue-950/30 via-zinc-950 to-zinc-950">
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent"></div>
-        
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10 space-y-6">
-          
-          {/* Banner Oficial Panorâmico */}
-          <div className="rounded-2xl sm:rounded-3xl overflow-hidden border border-blue-500/30 shadow-2xl shadow-blue-950/40 relative group">
-            <img 
-              src="/banner.png" 
-              alt="Nova Aliança Esperança" 
-              className="w-full h-auto object-cover max-h-[460px] transition duration-700 group-hover:scale-[1.01]"
-            />
-          </div>
+      {/* ========================================================================= */}
+      {/* SELEÇÃO DE ABAS RÁPIDA (SUB-BAR DESKTOP & MOBILE)                         */}
+      {/* ========================================================================= */}
+      <div className="border-b border-zinc-800/80 bg-zinc-900/50 backdrop-blur-sm sticky top-[61px] z-30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-start sm:justify-center gap-2 overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => setActiveTab('inicio')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'inicio'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-950/60'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Página Principal & Cultos</span>
+          </button>
 
-          {/* Botões de Ação Principais */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
-            <a
-              href="#programacao"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 text-white text-xs sm:text-sm font-bold shadow-xl shadow-blue-950/60 flex items-center justify-center gap-2.5 transition"
-            >
-              <Calendar className="w-4 h-4 text-sky-200" />
-              <span>Ver Próximos Cultos</span>
-              <ArrowRight className="w-4 h-4" />
-            </a>
+          <button
+            onClick={() => setActiveTab('sobre')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'sobre'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-950/60'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+            }`}
+          >
+            <Church className="w-3.5 h-3.5" />
+            <span>Sobre Nós</span>
+          </button>
 
-            <a
-              href={GOOGLE_MAPS_LOCATION_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 hover:text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2"
-            >
-              <Navigation className="w-4 h-4 text-sky-400" />
-              <span>Localização no Google Maps</span>
-              <ExternalLink className="w-3.5 h-3.5 text-zinc-500" />
-            </a>
+          <button
+            onClick={() => setActiveTab('missao')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'missao'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-950/60'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>Missão & Visão</span>
+          </button>
 
-            <a
-              href="#sobre"
-              className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-blue-900/60 text-sky-300 text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2"
-            >
-              <Church className="w-4 h-4 text-sky-400" />
-              <span>Conhecer Nossa História</span>
-            </a>
-          </div>
+          <button
+            onClick={() => setActiveTab('pilares')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'pilares'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-950/60'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Os 7 Pilares</span>
+          </button>
         </div>
-      </section>
+      </div>
 
       {/* ========================================================================= */}
-      {/* SEÇÃO: SOBRE NÓS (UMA HISTÓRIA DE FÉ, CUIDADO E MISSÃO)                   */}
+      {/* ABA 1: INÍCIO (BANNER PANORÂMICO + PROGRAMAÇÃO DESLIZANTE + ONDE ESTAMOS) */}
       {/* ========================================================================= */}
-      <section id="sobre" className="py-14 sm:py-20 border-b border-zinc-800/80 bg-zinc-900/30">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
+      {activeTab === 'inicio' && (
+        <div className="space-y-12 sm:space-y-16 animate-in fade-in duration-300 pb-16">
           
+          {/* Banner Oficial Panorâmico (Sem botões redundantes) */}
+          <section className="pt-4 sm:pt-6 max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="rounded-2xl sm:rounded-3xl overflow-hidden border border-blue-500/30 shadow-2xl shadow-blue-950/40 relative group">
+              <img 
+                src="/banner.png" 
+                alt="Nova Aliança Esperança" 
+                className="w-full h-auto object-cover max-h-[460px] transition duration-700 group-hover:scale-[1.01]"
+              />
+            </div>
+          </section>
+
+          {/* PROGRAMAÇÃO SEMANAL GRANDE DESLIZANTE AUTOMÁTICO (1 POR 1 A CADA 5s) */}
+          <section 
+            id="programacao" 
+            className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-1 border-b border-zinc-800/80">
+              <div className="space-y-1.5">
+                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-blue-500/10 text-sky-400 text-xs font-bold border border-blue-500/20">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>Programação Oficial inChurch</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  Programação Semanal & Cultos
+                </h2>
+                <p className="text-xs sm:text-sm text-zinc-400">
+                  Transição automática a cada 5 segundos. Clique no evento para ler o assunto na íntegra.
+                </p>
+              </div>
+
+              {/* Controles de Navegação Rápida (Setas Prev / Next) */}
+              {currentAndFutureEvents.length > 1 && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handlePrevSlide}
+                    className="p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-sky-500/50 transition cursor-pointer shadow-sm"
+                    title="Evento Anterior"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleNextSlide}
+                    className="p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-sky-500/50 transition cursor-pointer shadow-sm"
+                    title="Próximo Evento"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Slide Grande de 1 Evento */}
+            {loadingEvents ? (
+              <div className="py-24 text-center space-y-3 bg-zinc-900/40 rounded-3xl border border-zinc-800">
+                <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-xs text-zinc-400">Carregando programação oficial da inChurch...</p>
+              </div>
+            ) : currentAndFutureEvents.length === 0 ? (
+              <div className="py-16 text-center bg-zinc-900/40 rounded-3xl border border-zinc-800 space-y-2">
+                <Calendar className="w-10 h-10 text-zinc-600 mx-auto" />
+                <h3 className="text-sm font-bold text-zinc-300">Nenhum evento futuro cadastrado no momento</h3>
+                <p className="text-xs text-zinc-500">Volte em breve para novas celebrações e encontros.</p>
+              </div>
+            ) : currentEvent ? (
+              <div className="space-y-4">
+                
+                {/* Card Cinematográfico Grande do Evento Ativo */}
+                <div
+                  onClick={() => setSelectedEvent(currentEvent)}
+                  className="relative rounded-3xl overflow-hidden border border-blue-900/60 bg-zinc-900 group shadow-2xl hover:border-sky-500/60 transition duration-500 cursor-pointer min-h-[420px] sm:min-h-[480px] flex flex-col justify-end"
+                >
+                  {/* Imagem de Fundo Grande */}
+                  <div className="absolute inset-0 bg-zinc-950 overflow-hidden">
+                    {currentEvent.image || currentEvent.thumbnail ? (
+                      <img
+                        key={currentEvent.id}
+                        src={currentEvent.image || currentEvent.thumbnail || ''}
+                        alt={currentEvent.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-700 animate-in fade-in"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-tr from-blue-950 via-zinc-900 to-sky-950 flex items-center justify-center">
+                        <Church className="w-20 h-20 text-zinc-700" />
+                      </div>
+                    )}
+                    {/* Gradiente de escurecimento para leitura perfeita */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/75 to-transparent"></div>
+                    <div className="absolute inset-0 bg-black/25"></div>
+                  </div>
+
+                  {/* Badges do Topo (Data, Contador e Indicador de Autoplay) */}
+                  <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+                    <div className="flex items-center gap-2">
+                      {currentEvent.start_datetime ? (
+                        <span className="px-3.5 py-1.5 rounded-full bg-blue-950/90 backdrop-blur-md text-sky-300 border border-sky-500/50 text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                          <Clock className="w-3.5 h-3.5 text-sky-400" />
+                          <span className="capitalize">{formatEventDate(currentEvent.start_datetime)}</span>
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-full bg-blue-950/90 backdrop-blur-md text-sky-300 border border-sky-500/40 text-xs font-bold">
+                          Próximo Culto
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-zinc-300 text-xs font-mono font-bold border border-white/10">
+                        {currentSlide + 1} de {currentAndFutureEvents.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Conteúdo do Slide no Rodapé */}
+                  <div className="relative z-10 p-6 sm:p-10 space-y-3.5 max-w-4xl">
+                    <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-md group-hover:text-sky-300 transition duration-300">
+                      {currentEvent.title}
+                    </h3>
+
+                    <p className="text-xs sm:text-base text-zinc-200 line-clamp-2 sm:line-clamp-3 leading-relaxed drop-shadow max-w-3xl">
+                      {currentEvent.description
+                        ? currentEvent.description.replace(/\n+/g, ' ')
+                        : 'Clique para conferir todos os detalhes e informações deste momento especial conosco.'}
+                    </p>
+
+                    <div className="pt-2 flex flex-wrap items-center gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedEvent(currentEvent);
+                        }}
+                        className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 text-white text-xs sm:text-sm font-bold shadow-xl shadow-blue-950/60 flex items-center gap-2 transition cursor-pointer"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        <span>Ler Assunto Completo</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShare(currentEvent);
+                        }}
+                        className="px-4 py-2.5 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+                      >
+                        <Share2 className="w-4 h-4 text-sky-400" />
+                        <span>Compartilhar</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bolinhas Seletivas (Dots) com Todos os Eventos Futuros */}
+                {currentAndFutureEvents.length > 1 && (
+                  <div className="flex items-center justify-center gap-2 pt-2">
+                    {currentAndFutureEvents.map((ev, idx) => {
+                      const isActive = idx === currentSlide;
+                      return (
+                        <button
+                          key={ev.id || idx}
+                          onClick={() => setCurrentSlide(idx)}
+                          className={`transition-all duration-300 cursor-pointer ${
+                            isActive
+                              ? 'w-8 h-2.5 rounded-full bg-sky-400 shadow-md shadow-sky-400/50'
+                              : 'w-2.5 h-2.5 rounded-full bg-zinc-700 hover:bg-zinc-500'
+                          }`}
+                          title={`Ver evento ${idx + 1}: ${ev.title}`}
+                          aria-label={`Ir para evento ${idx + 1}`}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+
+              </div>
+            ) : null}
+          </section>
+
+          {/* SEÇÃO: ONDE ESTAMOS & CANAIS OFICIAIS */}
+          <section id="localizacao" className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
+            <div className="bg-zinc-900/60 border border-blue-900/40 rounded-3xl p-6 sm:p-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-center shadow-xl">
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sky-400 text-xs font-bold uppercase tracking-wider">
+                  <MapPin className="w-4 h-4" />
+                  <span>Onde Estamos</span>
+                </div>
+
+                <h3 className="text-2xl sm:text-3xl font-black text-white">
+                  Igreja Nova Aliança Esperança
+                </h3>
+                
+                <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  R. Joaquim Monteiro de Franca, nº 457<br />
+                  Gramame / Colinas do Sul — João Pessoa, PB, 58069-000.<br/>
+                  Um ambiente de acolhimento, restauração e adoração para toda a sua família.
+                </p>
+
+                <div className="pt-2">
+                  <a
+                    href={GOOGLE_MAPS_LOCATION_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold transition shadow-lg shadow-blue-950/40"
+                  >
+                    <Navigation className="w-4 h-4" />
+                    <span>Abrir Rota no Google Maps</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Cartão de Canais Oficiais */}
+              <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 sm:p-6 space-y-3.5">
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <HeartHandshake className="w-4 h-4 text-sky-400" />
+                  Canais Oficiais
+                </h4>
+                
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-850">
+                    <span className="text-zinc-300 font-medium">Site Oficial:</span>
+                    <span className="text-sky-400 font-mono font-semibold">novaliancaesperancajp.com.br</span>
+                  </div>
+
+                  <a
+                    href={YOUTUBE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-850 hover:border-red-500/50 transition group"
+                  >
+                    <div className="flex items-center gap-2 text-zinc-300">
+                      <Youtube className="w-4 h-4 text-red-500" />
+                      <span className="font-medium">Canal do YouTube:</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-red-400 group-hover:text-red-300 font-semibold font-mono text-[11px]">
+                      <span>@NVAEsperançaJPPB</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </div>
+                  </a>
+
+                  <a
+                    href={INSTAGRAM_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-850 hover:border-pink-500/50 transition group"
+                  >
+                    <div className="flex items-center gap-2 text-zinc-300">
+                      <Instagram className="w-4 h-4 text-pink-500" />
+                      <span className="font-medium">Instagram:</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-pink-400 group-hover:text-pink-300 font-semibold font-mono text-[11px]">
+                      <span>@novaaliancaesperancajp</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </div>
+                  </a>
+
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-850">
+                    <span className="text-zinc-300 font-medium">Perfil no Google:</span>
+                    <a 
+                      href={GOOGLE_MAPS_LOCATION_URL} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sky-400 hover:underline flex items-center gap-1 font-bold"
+                    >
+                      <span>Ver perfil e avaliações</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* ABA 2: SOBRE NÓS (UMA HISTÓRIA DE FÉ, CUIDADO E MISSÃO)                   */}
+      {/* ========================================================================= */}
+      {activeTab === 'sobre' && (
+        <section className="py-10 sm:py-16 max-w-6xl mx-auto px-4 sm:px-6 space-y-10 animate-in fade-in duration-300">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             
             {/* Texto Principal */}
@@ -393,7 +754,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                 </p>
 
                 <p className="font-semibold text-zinc-200">
-                  O ministério completou <span className="text-sky-400">20 anos em julho de 2025</span>, reafirmando seu compromisso com evangelização, discipulado, missões e compaixão social.
+                  O ministério completou <span className="text-sky-400 font-bold">20 anos em julho de 2025</span>, reafirmando seu compromisso com evangelização, discipulado, missões e compaixão social.
                 </p>
 
                 <p className="text-xs text-zinc-500 italic pt-1">
@@ -404,7 +765,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
               <div className="pt-2">
                 <button
                   onClick={() => setShowMatrizModal(true)}
-                  className="inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-700 to-sky-600 hover:from-blue-600 hover:to-sky-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-950/50 transition cursor-pointer"
+                  className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-700 to-sky-600 hover:from-blue-600 hover:to-sky-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-950/50 transition cursor-pointer"
                 >
                   <Info className="w-4 h-4 text-sky-200" />
                   <span>Ver Detalhes da Sede Matriz</span>
@@ -430,7 +791,6 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                 </span>
               </div>
 
-              {/* Lista dos 4 Pilares da Matriz */}
               <div className="space-y-3.5">
                 <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-zinc-950/70 border border-zinc-800/80">
                   <div className="w-10 h-10 rounded-xl bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-sky-300 shrink-0">
@@ -475,7 +835,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
 
               <button
                 onClick={() => setShowMatrizModal(true)}
-                className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-sky-300 text-xs font-bold border border-zinc-700 transition cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-sky-300 text-xs font-bold border border-zinc-700 transition cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <span>Abrir Informações Completas</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -483,448 +843,222 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
             </div>
 
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ========================================================================= */}
-      {/* SEÇÃO: MISSÃO, VISÃO E PROPÓSITO                                         */}
+      {/* ABA 3: MISSÃO, VISÃO E PROPÓSITO                                         */}
       {/* ========================================================================= */}
-      <section id="missao-visao" className="py-16 sm:py-20 border-b border-zinc-800/80 max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-10">
-        <div className="text-center space-y-2 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-sky-400 text-xs font-bold border border-blue-500/20">
-            <Compass className="w-3.5 h-3.5" />
-            <span>MISSÃO, VISÃO E PROPÓSITO</span>
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            O que nos move e para onde caminhamos
-          </h2>
-          <p className="text-xs sm:text-sm text-zinc-400">
-            As frases abaixo foram organizadas editorialmente a partir dos conteúdos oficiais encontrados.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          
-          {/* Missão */}
-          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-7 space-y-3.5 transition group shadow-sm hover:shadow-xl hover:shadow-blue-950/30 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 group-hover:scale-110 transition duration-300">
-                <Flag className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-black text-white tracking-tight">
-                Missão
-              </h3>
-              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                Glorificar Jesus, manifestar o Reino de Deus por meio de obras de compaixão e proclamar o Evangelho até os confins da terra.
-              </p>
+      {activeTab === 'missao' && (
+        <section className="py-10 sm:py-16 max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-10 animate-in fade-in duration-300">
+          <div className="text-center space-y-2 max-w-2xl mx-auto">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-sky-400 text-xs font-bold border border-blue-500/20">
+              <Compass className="w-3.5 h-3.5" />
+              <span>MISSÃO, VISÃO E PROPÓSITO</span>
             </div>
-            <div className="pt-2 border-t border-zinc-800/60 text-[11px] font-bold text-sky-400">
-              Proclamar & Glorificar
-            </div>
-          </div>
-
-          {/* Visão */}
-          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-7 space-y-3.5 transition group shadow-sm hover:shadow-xl hover:shadow-blue-950/30 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-110 transition duration-300">
-                <Telescope className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-black text-white tracking-tight">
-                Visão
-              </h3>
-              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                Ser uma igreja pequena para cuidar de cada pessoa e grande para impactar nações.
-              </p>
-            </div>
-            <div className="pt-2 border-t border-zinc-800/60 text-[11px] font-bold text-sky-400">
-              Cuidar & Impactar
-            </div>
-          </div>
-
-          {/* Identidade */}
-          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-7 space-y-3.5 transition group shadow-sm hover:shadow-xl hover:shadow-blue-950/30 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 group-hover:scale-110 transition duration-300">
-                <Heart className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-black text-white tracking-tight">
-                Identidade
-              </h3>
-              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                Amar a Deus e amar pessoas.
-              </p>
-            </div>
-            <div className="pt-2 border-t border-zinc-800/60 text-[11px] font-bold text-sky-400">
-              Amor Incondicional
-            </div>
-          </div>
-
-          {/* Propósito */}
-          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-7 space-y-3.5 transition group shadow-sm hover:shadow-xl hover:shadow-blue-950/30 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition duration-300">
-                <Sprout className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-black text-white tracking-tight">
-                Propósito
-              </h3>
-              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                Formar discípulos de Jesus, desenvolver líderes, plantar igrejas e promover transformação espiritual e social nas comunidades e nações alcançadas pelo ministério.
-              </p>
-            </div>
-            <div className="pt-2 border-t border-zinc-800/60 text-[11px] font-bold text-sky-400">
-              Transformação & Liderança
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* SEÇÃO: OS SETE PILARES DA NOVA ALIANÇA                                   */}
-      {/* ========================================================================= */}
-      <section id="pilares" className="py-16 sm:py-20 border-b border-zinc-800/80 bg-zinc-950 max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-10">
-        <div className="text-center space-y-2 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-sky-400 text-xs font-bold border border-blue-500/20">
-            <Layers className="w-3.5 h-3.5" />
-            <span>OS SETE PILARES DA NOVA ALIANÇA</span>
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            O que sustenta nossa fé e nossas decisões
-          </h2>
-          <p className="text-xs sm:text-sm text-zinc-400">
-            Nossa identidade é sustentada por sete pilares que direcionam nossa fé, nossas decisões e nossa forma de servir a Deus e às pessoas.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          
-          {/* Pilar 1 */}
-          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
-            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
-              <HeartHandshake className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white tracking-tight">
-              Lugar de amar a Deus
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Buscamos desenvolver uma vida de intimidade, adoração, obediência e entrega ao Senhor.
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+              O que nos move e para onde caminhamos
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-400">
+              As frases abaixo foram organizadas editorialmente a partir dos conteúdos oficiais encontrados.
             </p>
           </div>
 
-          {/* Pilar 2 */}
-          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
-            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
-              <Heart className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white tracking-tight">
-              Lugar de amar pessoas
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Acreditamos no cuidado, no acolhimento, no serviço e na valorização de cada pessoa.
-            </p>
-          </div>
-
-          {/* Pilar 3 */}
-          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
-            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white tracking-tight">
-              Ser uma igreja da Palavra
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              A Bíblia é o fundamento da nossa fé, do nosso ensino e da nossa prática cristã.
-            </p>
-          </div>
-
-          {/* Pilar 4 */}
-          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
-            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
-              <Zap className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white tracking-tight">
-              Ser uma igreja do poder
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Cremos na atuação do Espírito Santo, em cura, libertação, milagres e transformação de vidas.
-            </p>
-          </div>
-
-          {/* Pilar 5 */}
-          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
-            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
-              <Shield className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white tracking-tight">
-              Ser uma igreja de santidade
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Buscamos uma vida separada para Deus, marcada pela integridade e pela obediência.
-            </p>
-          </div>
-
-          {/* Pilar 6 */}
-          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
-            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
-              <Feather className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white tracking-tight">
-              Ser uma igreja de liberdade
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Vivemos a liberdade do Espírito, sem legalismo, valorizando uma adoração sincera e verdadeira.
-            </p>
-          </div>
-
-          {/* Pilar 7 */}
-          <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20 md:col-span-2 lg:col-span-2">
-            <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
-              <Eye className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-white tracking-tight">
-              Ser uma igreja de revelação
-            </h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Buscamos conhecer e obedecer à vontade de Deus por meio da Palavra e da direção do Espírito Santo.
-            </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* SEÇÃO: PROGRAMAÇÃO DOS CULTOS & BLOG DE EVENTOS (INCHURCH)               */}
-      {/* ========================================================================= */}
-      <section id="programacao" className="py-16 sm:py-20 border-b border-zinc-800/80 max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-10">
-        <div className="text-center space-y-2 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-sky-400 text-xs font-bold border border-blue-500/20">
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Programação Oficial Atualizada</span>
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            Programação Semanal & Cultos
-          </h2>
-          <p className="text-xs sm:text-sm text-zinc-400">
-            Confira as celebrações, cultos de ensino e eventos que vão acontecer nos próximos dias. Clique em qualquer card para ver todo o conteúdo e informações completas.
-          </p>
-        </div>
-
-        {/* Grid de Eventos / Blog Feed */}
-        {loadingEvents ? (
-          <div className="py-20 text-center space-y-3">
-            <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="text-xs text-zinc-400">Carregando programação oficial da inChurch...</p>
-          </div>
-        ) : currentAndFutureEvents.length === 0 ? (
-          <div className="py-16 text-center bg-zinc-900/40 rounded-3xl border border-zinc-800 space-y-2">
-            <Calendar className="w-10 h-10 text-zinc-600 mx-auto" />
-            <h3 className="text-sm font-bold text-zinc-300">Nenhum evento futuro cadastrado no momento</h3>
-            <p className="text-xs text-zinc-500">Volte em breve para novas celebrações e encontros.</p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-              {visibleEvents.map((event) => {
-                const hasImage = Boolean(event.image || event.thumbnail);
-                const eventFormattedDate = formatEventDate(event.start_datetime);
-                const previewText = event.description
-                  ? event.description.replace(/\n+/g, ' ').slice(0, 130) + '...'
-                  : 'Clique para conferir todos os detalhes e informações deste momento especial conosco.';
-
-                return (
-                  <article
-                    key={event.id}
-                    onClick={() => setSelectedEvent(event)}
-                    className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl overflow-hidden flex flex-col justify-between transition group shadow-sm hover:shadow-2xl hover:shadow-blue-950/40 cursor-pointer"
-                  >
-                    <div>
-                      {/* Banner do Evento */}
-                      <div className="h-48 sm:h-52 bg-zinc-800 relative overflow-hidden">
-                        {hasImage ? (
-                          <img
-                            src={event.image || event.thumbnail || ''}
-                            alt={event.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-tr from-blue-950 via-zinc-900 to-sky-950 flex items-center justify-center p-6 text-center">
-                            <Church className="w-12 h-12 text-zinc-700" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/30 to-transparent"></div>
-
-                        {/* Badge de Data ou Status */}
-                        {eventFormattedDate ? (
-                          <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-blue-950/90 backdrop-blur-md text-sky-300 border border-sky-500/40 text-[11px] font-bold flex items-center gap-1 shadow-md">
-                            <Clock className="w-3 h-3 text-sky-400" />
-                            <span className="capitalize">{eventFormattedDate}</span>
-                          </span>
-                        ) : (
-                          <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-zinc-900/90 backdrop-blur-md text-sky-300 border border-sky-500/30 text-[10px] font-bold">
-                            Próxima Celebração
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Conteúdo */}
-                      <div className="p-4 sm:p-6 space-y-2.5">
-                        <h3 className="text-base sm:text-lg font-black text-white tracking-tight group-hover:text-sky-300 transition line-clamp-2">
-                          {event.title}
-                        </h3>
-
-                        <p className="text-xs text-zinc-400 leading-relaxed line-clamp-3">
-                          {previewText}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Rodapé com botão Ler Mais */}
-                    <div className="px-4 pb-4 sm:px-6 sm:pb-6 pt-0 flex items-center justify-between border-t border-zinc-800/60 mt-2">
-                      <span className="text-[11px] font-bold text-sky-400 group-hover:text-sky-300 flex items-center gap-1.5 transition">
-                        <span>Ler assunto completo</span>
-                        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
-                      </span>
-                      <span className="text-[10px] text-zinc-500 font-mono">inChurch</span>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-
-            {/* Botão Expansor: Mostrar Mais / Mostrar Menos */}
-            {currentAndFutureEvents.length > 3 && (
-              <div className="text-center pt-2">
-                <button
-                  onClick={() => setShowAllEvents(!showAllEvents)}
-                  className="px-6 py-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-sky-300 hover:text-white border border-blue-500/30 hover:border-sky-500/60 text-xs font-bold transition flex items-center gap-2 mx-auto cursor-pointer shadow-lg shadow-blue-950/20"
-                >
-                  {showAllEvents ? (
-                    <>
-                      <span>Mostrar Menos Cultos</span>
-                      <ChevronUp className="w-4 h-4 text-sky-400" />
-                    </>
-                  ) : (
-                    <>
-                      <span>Ver Mais Cultos & Eventos ({currentAndFutureEvents.length - 3} adicionais)</span>
-                      <ChevronDown className="w-4 h-4 text-sky-400" />
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* ========================================================================= */}
-      {/* SEÇÃO: LOCALIZAÇÃO & CONTATO OFICIAL                                     */}
-      {/* ========================================================================= */}
-      <section id="localizacao" className="py-14 sm:py-20 border-t border-zinc-800/80 bg-zinc-900/40">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-          
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sky-400 text-xs font-bold uppercase tracking-wider">
-              <MapPin className="w-4 h-4" />
-              <span>Onde Estamos</span>
-            </div>
-
-            <h3 className="text-xl sm:text-2xl font-black text-white">
-              Igreja Evangélica Nova Aliança Esperança
-            </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             
-            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              R. Joaquim Monteiro de Franca, nº 457<br />
-              Gramame / Colinas do Sul — João Pessoa, PB, 58069-000.<br/>
-              Um ambiente de acolhimento, restauração e adoração para toda a sua família.
+            {/* Missão */}
+            <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-7 space-y-3.5 transition group shadow-sm hover:shadow-xl hover:shadow-blue-950/30 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 group-hover:scale-110 transition duration-300">
+                  <Flag className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-black text-white tracking-tight">
+                  Missão
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  Glorificar Jesus, manifestar o Reino de Deus por meio de obras de compaixão e proclamar o Evangelho até os confins da terra.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-zinc-800/60 text-[11px] font-bold text-sky-400">
+                Proclamar & Glorificar
+              </div>
+            </div>
+
+            {/* Visão */}
+            <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-7 space-y-3.5 transition group shadow-sm hover:shadow-xl hover:shadow-blue-950/30 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-110 transition duration-300">
+                  <Telescope className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-black text-white tracking-tight">
+                  Visão
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  Ser uma igreja pequena para cuidar de cada pessoa e grande para impactar nações.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-zinc-800/60 text-[11px] font-bold text-sky-400">
+                Cuidar & Impactar
+              </div>
+            </div>
+
+            {/* Identidade */}
+            <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-7 space-y-3.5 transition group shadow-sm hover:shadow-xl hover:shadow-blue-950/30 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 group-hover:scale-110 transition duration-300">
+                  <Heart className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-black text-white tracking-tight">
+                  Identidade
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  Amar a Deus e amar pessoas.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-zinc-800/60 text-[11px] font-bold text-sky-400">
+                Amor Incondicional
+              </div>
+            </div>
+
+            {/* Propósito */}
+            <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-6 sm:p-7 space-y-3.5 transition group shadow-sm hover:shadow-xl hover:shadow-blue-950/30 flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition duration-300">
+                  <Sprout className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-black text-white tracking-tight">
+                  Propósito
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  Formar discípulos de Jesus, desenvolver líderes, plantar igrejas e promover transformação espiritual e social nas comunidades e nações alcançadas pelo ministério.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-zinc-800/60 text-[11px] font-bold text-sky-400">
+                Transformação & Liderança
+              </div>
+            </div>
+
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================================= */}
+      {/* ABA 4: OS SETE PILARES DA NOVA ALIANÇA                                   */}
+      {/* ========================================================================= */}
+      {activeTab === 'pilares' && (
+        <section className="py-10 sm:py-16 max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-10 animate-in fade-in duration-300">
+          <div className="text-center space-y-2 max-w-2xl mx-auto">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-sky-400 text-xs font-bold border border-blue-500/20">
+              <Layers className="w-3.5 h-3.5" />
+              <span>OS SETE PILARES DA NOVA ALIANÇA</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+              O que sustenta nossa fé e nossas decisões
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-400">
+              Nossa identidade é sustentada por sete pilares que direcionam nossa fé, nossas decisões e nossa forma de servir a Deus e às pessoas.
             </p>
-
-            <div className="pt-2">
-              <a
-                href={GOOGLE_MAPS_LOCATION_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold transition shadow-lg shadow-blue-950/40"
-              >
-                <Navigation className="w-4 h-4" />
-                <span>Abrir Rota no Google Maps</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
           </div>
 
-          {/* Cartão de Canais Oficiais */}
-          <div className="bg-zinc-950 border border-blue-900/40 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
-            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <HeartHandshake className="w-4 h-4 text-sky-400" />
-              Canais Oficiais
-            </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             
-            <div className="space-y-2.5 text-xs">
-              
-              {/* Site Oficial */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800">
-                <span className="text-zinc-300 font-medium">Site Oficial:</span>
-                <span className="text-sky-400 font-mono font-semibold">novaliancaesperancajp.com.br</span>
+            {/* Pilar 1 */}
+            <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
+              <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+                <HeartHandshake className="w-5 h-5" />
               </div>
-
-              {/* Canal do YouTube */}
-              <a
-                href={YOUTUBE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-red-500/50 transition group"
-              >
-                <div className="flex items-center gap-2 text-zinc-300">
-                  <Youtube className="w-4 h-4 text-red-500" />
-                  <span className="font-medium">Canal do YouTube:</span>
-                </div>
-                <div className="flex items-center gap-1 text-red-400 group-hover:text-red-300 font-semibold font-mono text-[11px]">
-                  <span>@NVAEsperançaJPPB</span>
-                  <ExternalLink className="w-3 h-3" />
-                </div>
-              </a>
-
-              {/* Instagram */}
-              <a
-                href={INSTAGRAM_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-pink-500/50 transition group"
-              >
-                <div className="flex items-center gap-2 text-zinc-300">
-                  <Instagram className="w-4 h-4 text-pink-500" />
-                  <span className="font-medium">Instagram:</span>
-                </div>
-                <div className="flex items-center gap-1 text-pink-400 group-hover:text-pink-300 font-semibold font-mono text-[11px]">
-                  <span>@novaaliancaesperancajp</span>
-                  <ExternalLink className="w-3 h-3" />
-                </div>
-              </a>
-
-              {/* Perfil no Google */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800">
-                <span className="text-zinc-300 font-medium">Perfil no Google:</span>
-                <a 
-                  href={GOOGLE_MAPS_LOCATION_URL} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sky-400 hover:underline flex items-center gap-1 font-bold"
-                >
-                  <span>Ver perfil e avaliações</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-
+              <h3 className="text-base font-bold text-white tracking-tight">
+                Lugar de amar a Deus
+              </h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Buscamos desenvolver uma vida de intimidade, adoração, obediência e entrega ao Senhor.
+              </p>
             </div>
-          </div>
 
-        </div>
-      </section>
+            {/* Pilar 2 */}
+            <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
+              <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+                <Heart className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold text-white tracking-tight">
+                Lugar de amar pessoas
+              </h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Acreditamos no cuidado, no acolhimento, no serviço e na valorização de cada pessoa.
+              </p>
+            </div>
+
+            {/* Pilar 3 */}
+            <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
+              <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold text-white tracking-tight">
+                Ser uma igreja da Palavra
+              </h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                A Bíblia é o fundamento da nossa fé, do nosso ensino e da nossa prática cristã.
+              </p>
+            </div>
+
+            {/* Pilar 4 */}
+            <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
+              <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+                <Zap className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold text-white tracking-tight">
+                Ser uma igreja do poder
+              </h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Cremos na atuação do Espírito Santo, em cura, libertação, milagres e transformação de vidas.
+              </p>
+            </div>
+
+            {/* Pilar 5 */}
+            <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
+              <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+                <Shield className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold text-white tracking-tight">
+                Ser uma igreja de santidade
+              </h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Buscamos uma vida separada para Deus, marcada pela integridade e pela obediência.
+              </p>
+            </div>
+
+            {/* Pilar 6 */}
+            <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20">
+              <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+                <Feather className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold text-white tracking-tight">
+                Ser uma igreja de liberdade
+              </h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Vivemos a liberdade do Espírito, sem legalismo, valorizando uma adoração sincera e verdadeira.
+              </p>
+            </div>
+
+            {/* Pilar 7 */}
+            <div className="bg-zinc-900/90 border border-zinc-800 hover:border-sky-500/50 rounded-3xl p-5 sm:p-6 space-y-3 transition shadow-sm hover:shadow-xl hover:shadow-blue-950/20 md:col-span-2 lg:col-span-2">
+              <div className="w-11 h-11 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-sky-400">
+                <Eye className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold text-white tracking-tight">
+                Ser uma igreja de revelação
+              </h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Buscamos conhecer e obedecer à vontade de Deus por meio da Palavra e da direção do Espírito Santo.
+              </p>
+            </div>
+
+          </div>
+        </section>
+      )}
 
       {/* Footer com Logo sem fundo branco e Redes Sociais */}
-      <footer className="border-t border-zinc-800/80 py-8 text-center text-xs text-zinc-500 space-y-4 px-4">
+      <footer className="border-t border-zinc-800/80 py-8 text-center text-xs text-zinc-500 space-y-4 px-4 mt-auto">
         <div className="flex items-center justify-center gap-3">
           <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain filter drop-shadow-md" />
           <span className="font-black text-zinc-200 text-sm tracking-tight">Igreja Nova Aliança Esperança</span>
@@ -998,7 +1132,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
               </button>
             </div>
 
-            {/* Quadro com os 4 Pilares da Matriz (Visual idêntico à imagem de referência) */}
+            {/* Quadro com os 4 Pilares da Matriz */}
             <div className="p-4 sm:p-5 rounded-2xl bg-blue-950/30 border border-blue-900/50 space-y-4">
               
               <div className="flex items-start gap-4">
@@ -1095,7 +1229,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
 
               <div className="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-6 sm:right-6">
                 <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 backdrop-blur-md text-sky-300 border border-blue-500/30 text-[11px] font-bold inline-block mb-1 sm:mb-2">
-                  Programação Oficial
+                  Programação Oficial inChurch
                 </span>
                 <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight drop-shadow-md line-clamp-2">
                   {selectedEvent.title}
@@ -1135,7 +1269,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                 >
                   <Navigation className="w-3.5 h-3.5" />
                   <span>Ver no Google Maps (Rota)</span>
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
             </div>
