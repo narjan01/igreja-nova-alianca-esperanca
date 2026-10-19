@@ -3,46 +3,74 @@ import { ChurchEvent } from '../types';
 import { ChurchDataService } from '../lib/churchDataService';
 import { 
   Church, 
-  Music, 
   Calendar, 
   MapPin, 
   Clock, 
-  Users, 
   HeartHandshake, 
   ArrowRight, 
-  Sparkles,
   ExternalLink,
   ShieldCheck,
-  Compass,
-  Phone,
   Share2,
   X,
   BookOpen,
-  CalendarDays,
-  Tag,
   ChevronDown,
   ChevronUp,
-  Navigation
+  Navigation,
+  Youtube,
+  Instagram,
+  Download,
+  Smartphone,
+  Menu
 } from 'lucide-react';
 
 interface ChurchLandingPageProps {
-  onGoToLouvorPortal?: () => void;
   onGoToAdmin?: () => void;
 }
 
 const GOOGLE_MAPS_LOCATION_URL = "https://share.google/jDtcY6Ae8UcT0mPAC";
+const YOUTUBE_URL = "https://www.youtube.com/@NVAEsperançaJPPB";
+const INSTAGRAM_URL = "https://www.instagram.com/novaaliancaesperancajp/";
 
 export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({ 
-  onGoToLouvorPortal,
   onGoToAdmin 
 }) => {
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<ChurchEvent | null>(null);
   const [showAllEvents, setShowAllEvents] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // PWA Install Prompt State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
 
   useEffect(() => {
     loadEvents();
+
+    // Listener para o evento de instalação do PWA
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Verificar se já está rodando em modo standalone (PWA instalado)
+    if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
+      setIsAppInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
 
   const loadEvents = async () => {
@@ -52,11 +80,17 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
     setLoadingEvents(false);
   };
 
-  const handlePortalLouvor = () => {
-    if (onGoToLouvorPortal) {
-      onGoToLouvorPortal();
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choiceResult = await deferredPrompt.userChoice;
+      if (choiceResult.outcome === 'accepted') {
+        setIsAppInstalled(true);
+      }
+      setDeferredPrompt(null);
     } else {
-      window.location.href = 'https://louvor.novaliancaesperancajp.com.br';
+      // Se não tiver o prompt nativo imediato (ex: iOS Safari ou Chrome desktop), abre o guia
+      setShowInstallGuide(true);
     }
   };
 
@@ -81,18 +115,16 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
     const start = ev.start_datetime ? new Date(ev.start_datetime) : null;
 
     if (end && !isNaN(end.getTime())) {
-      // Exibir se terminou há menos de 12 horas
       return end.getTime() >= (now.getTime() - 12 * 60 * 60 * 1000);
     }
     if (start && !isNaN(start.getTime())) {
-      // Exibir se começou há menos de 24 horas
       return start.getTime() >= (now.getTime() - 24 * 60 * 60 * 1000);
     }
     return true;
   }).sort((a, b) => {
     const timeA = a.start_datetime ? new Date(a.start_datetime).getTime() : 0;
     const timeB = b.start_datetime ? new Date(b.start_datetime).getTime() : 0;
-    return timeA - timeB; // Do mais próximo para o mais distante
+    return timeA - timeB;
   });
 
   // Exibir inicialmente 3 e expandir o restante com o botão
@@ -113,111 +145,238 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-blue-500/30 selection:text-blue-200">
+      
       {/* Top Navbar */}
-      <nav className="border-b border-blue-900/40 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Logo Oficial da Igreja */}
-            <div className="w-11 h-11 rounded-2xl bg-white/5 border border-blue-500/30 p-1 flex items-center justify-center shadow-lg shadow-blue-950/50">
+      <nav className="border-b border-blue-900/40 bg-zinc-950/90 backdrop-blur-md sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+          
+          {/* Logo Oficial da Igreja (Fundo Transparente) */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center shrink-0">
               <img 
                 src="/logo.png" 
                 alt="Logo Nova Aliança Esperança" 
-                className="w-full h-full object-contain" 
+                className="w-full h-full object-contain filter drop-shadow-[0_2px_8px_rgba(29,78,216,0.5)]" 
               />
             </div>
             <div>
-              <span className="text-base sm:text-lg font-black tracking-tight text-white block leading-tight">
+              <span className="text-sm sm:text-lg font-black tracking-tight text-white block leading-tight">
                 Nova Aliança Esperança
               </span>
-              <span className="text-[11px] font-bold text-sky-400">
-                Uma igreja para pessoas reais — João Pessoa / PB
+              <span className="text-[10px] sm:text-[11px] font-bold text-sky-400 block leading-tight">
+                Uma igreja para pessoas reais
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Links Desktop */}
+          <div className="hidden lg:flex items-center gap-3">
             <a
               href="#programacao"
-              className="hidden md:inline-flex px-3 py-1.5 text-xs text-zinc-300 hover:text-sky-300 font-semibold transition"
+              className="px-3 py-1.5 text-xs text-zinc-300 hover:text-sky-300 font-semibold transition"
             >
               Programação & Cultos
+            </a>
+
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-pink-400 border border-zinc-800 transition"
+              title="Instagram @novaaliancaesperancajp"
+            >
+              <Instagram className="w-4 h-4" />
+            </a>
+
+            <a
+              href={YOUTUBE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-red-400 border border-zinc-800 transition"
+              title="Canal do YouTube @NVAEsperançaJPPB"
+            >
+              <Youtube className="w-4 h-4" />
             </a>
 
             <a
               href={GOOGLE_MAPS_LOCATION_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-semibold transition"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-semibold transition"
             >
               <MapPin className="w-3.5 h-3.5 text-sky-400" />
               <span>Como Chegar</span>
             </a>
 
-            <button
-              onClick={handlePortalLouvor}
-              className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-blue-900/60 text-xs font-bold transition flex items-center gap-2 cursor-pointer"
-            >
-              <Music className="w-4 h-4 text-sky-400" />
-              <span className="hidden sm:inline">Portal do Louvor</span>
-              <span className="sm:hidden">Louvor</span>
-            </button>
+            {!isAppInstalled && (
+              <button
+                onClick={handleInstallApp}
+                className="px-3.5 py-2 rounded-xl bg-sky-950/70 hover:bg-sky-900 border border-sky-500/40 text-sky-200 hover:text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                title="Instalar Aplicativo da Igreja no seu celular ou computador"
+              >
+                <Download className="w-3.5 h-3.5 text-sky-400" />
+                <span>Baixar App</span>
+              </button>
+            )}
 
             {onGoToAdmin && (
               <button
                 onClick={onGoToAdmin}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-700 to-sky-600 hover:from-blue-600 hover:to-sky-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-blue-950/60 cursor-pointer"
-                title="Acessar Área Restrita da Liderança (Controle de Membros e Células)"
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-700 to-sky-600 hover:from-blue-600 hover:to-sky-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-blue-950/60 cursor-pointer"
+                title="Acessar Área Restrita da Liderança"
               >
                 <ShieldCheck className="w-4 h-4 text-sky-200" />
                 <span>Área Restrita</span>
               </button>
             )}
           </div>
+
+          {/* Botões Mobile (Menu Hambúrguer + Botão Instalar App Rápido) */}
+          <div className="flex lg:hidden items-center gap-2">
+            {!isAppInstalled && (
+              <button
+                onClick={handleInstallApp}
+                className="px-2.5 py-1.5 rounded-xl bg-sky-950 border border-sky-500/50 text-sky-300 text-xs font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="text-[11px]">App</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white cursor-pointer"
+              aria-label="Abrir menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
+
+        {/* Menu Gaveta Mobile Expandido */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-zinc-800/80 bg-zinc-950/95 px-4 py-4 space-y-3 animate-in slide-in-from-top-2 duration-150">
+            <a
+              href="#programacao"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-zinc-900/80 text-zinc-200 text-sm font-semibold"
+            >
+              <BookOpen className="w-4 h-4 text-sky-400" />
+              <span>Programação & Cultos</span>
+            </a>
+
+            <a
+              href={GOOGLE_MAPS_LOCATION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-zinc-900/80 text-zinc-200 text-sm font-semibold"
+            >
+              <Navigation className="w-4 h-4 text-sky-400" />
+              <span>Como Chegar (Google Maps)</span>
+            </a>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-zinc-900 border border-pink-900/30 text-pink-300 text-xs font-bold"
+              >
+                <Instagram className="w-4 h-4" />
+                <span>Instagram</span>
+              </a>
+
+              <a
+                href={YOUTUBE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-zinc-900 border border-red-900/30 text-red-300 text-xs font-bold"
+              >
+                <Youtube className="w-4 h-4" />
+                <span>YouTube</span>
+              </a>
+            </div>
+
+            {!isAppInstalled && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleInstallApp();
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-sky-900/60 border border-sky-500/50 text-sky-200 text-xs font-bold cursor-pointer"
+              >
+                <Smartphone className="w-4 h-4 text-sky-400" />
+                <span>Baixar Aplicativo da Igreja</span>
+              </button>
+            )}
+
+            {onGoToAdmin && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onGoToAdmin();
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-700 to-sky-600 text-white text-xs font-bold shadow-md cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4 text-sky-200" />
+                <span>Área Restrita da Liderança</span>
+              </button>
+            )}
+          </div>
+        )}
       </nav>
 
       {/* Hero Section com Banner Oficial Panorâmico */}
-      <section className="relative overflow-hidden pt-6 sm:pt-10 pb-14 sm:pb-20 border-b border-blue-900/30 bg-gradient-to-b from-blue-950/30 via-zinc-950 to-zinc-950">
+      <section className="relative overflow-hidden pt-4 sm:pt-8 pb-12 sm:pb-16 border-b border-blue-900/30 bg-gradient-to-b from-blue-950/30 via-zinc-950 to-zinc-950">
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent"></div>
         
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10 space-y-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10 space-y-6 sm:space-y-8">
           
           {/* Banner Oficial Panorâmico */}
-          <div className="rounded-3xl overflow-hidden border border-blue-500/30 shadow-2xl shadow-blue-950/40 relative group">
+          <div className="rounded-2xl sm:rounded-3xl overflow-hidden border border-blue-500/30 shadow-2xl shadow-blue-950/40 relative group">
             <img 
               src="/banner.png" 
               alt="Nova Aliança Esperança - Uma igreja para pessoas reais" 
-              className="w-full h-auto object-cover max-h-[480px] transition duration-700 group-hover:scale-[1.01]"
+              className="w-full h-auto object-cover max-h-[460px] transition duration-700 group-hover:scale-[1.01]"
             />
           </div>
 
-          {/* Destaques e Valores da Igreja */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-2">
-            {[
-              { icon: '❤️', label: 'AMAR A DEUS' },
-              { icon: '👥', label: 'AMAR PESSOAS' },
-              { icon: '📖', label: 'VIVER A PALAVRA' },
-              { icon: '🔥', label: 'EXPERIMENTAR O PODER' },
-              { icon: '🕊️', label: 'VIVER EM SANTIDADE' },
-              { icon: '🎯', label: 'CAMINHAR EM PROPÓSITO' },
-            ].map((v, i) => (
-              <div 
-                key={i} 
-                className="bg-zinc-900/80 border border-blue-900/40 rounded-2xl p-3 text-center space-y-1 hover:border-sky-500/40 transition"
-              >
-                <span className="text-xl block">{v.icon}</span>
-                <span className="text-[11px] font-bold text-zinc-300 block tracking-tight leading-tight">
-                  {v.label}
-                </span>
-              </div>
-            ))}
+          {/* Destaques e Visão da Igreja (7 Quadrados incluindo Igreja de Revelação) */}
+          <div>
+            <div className="text-center pb-3">
+              <span className="text-[11px] font-bold text-sky-400 uppercase tracking-widest">
+                Nossos Pilares & Visão
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3">
+              {[
+                { icon: '❤️', label: 'AMAR A DEUS' },
+                { icon: '👥', label: 'AMAR PESSOAS' },
+                { icon: '📖', label: 'VIVER A PALAVRA' },
+                { icon: '🔥', label: 'EXPERIMENTAR O PODER' },
+                { icon: '🕊️', label: 'VIVER EM SANTIDADE' },
+                { icon: '🎯', label: 'CAMINHAR EM PROPÓSITO' },
+                { icon: '✨', label: 'IGREJA DE REVELAÇÃO' },
+              ].map((v, i) => (
+                <div 
+                  key={i} 
+                  className="bg-zinc-900/80 border border-blue-900/40 rounded-2xl p-3 text-center space-y-1.5 hover:border-sky-500/50 hover:bg-zinc-900 transition flex flex-col items-center justify-center shadow-sm"
+                >
+                  <span className="text-xl sm:text-2xl block">{v.icon}</span>
+                  <span className="text-[11px] font-extrabold text-zinc-200 block tracking-tight leading-tight">
+                    {v.label}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Botões de Ação */}
+          {/* Botões de Ação Principais e Redes Sociais */}
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <a
               href="#programacao"
-              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 text-white text-xs sm:text-sm font-bold shadow-xl shadow-blue-950/60 flex items-center gap-2.5 transition"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 text-white text-xs sm:text-sm font-bold shadow-xl shadow-blue-950/60 flex items-center justify-center gap-2.5 transition"
             >
               <Calendar className="w-4 h-4 text-sky-200" />
               <span>Ver Próximos Cultos</span>
@@ -228,18 +387,28 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
               href={GOOGLE_MAPS_LOCATION_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-6 py-3.5 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 hover:text-white text-xs sm:text-sm font-bold transition flex items-center gap-2"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 hover:text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2"
             >
               <Navigation className="w-4 h-4 text-sky-400" />
-              <span>Localização no Google Maps</span>
+              <span>Como Chegar (Google Maps)</span>
               <ExternalLink className="w-3.5 h-3.5 text-zinc-500" />
             </a>
+
+            {!isAppInstalled && (
+              <button
+                onClick={handleInstallApp}
+                className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-sky-950/60 hover:bg-sky-900 border border-sky-500/40 text-sky-200 text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Smartphone className="w-4 h-4 text-sky-400" />
+                <span>Instalar Aplicativo</span>
+              </button>
+            )}
           </div>
         </div>
       </section>
 
       {/* Programação dos Cultos & Blog de Eventos (inChurch) */}
-      <section id="programacao" className="py-16 sm:py-20 border-b border-zinc-800/80 max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-10">
+      <section id="programacao" className="py-12 sm:py-18 border-b border-zinc-800/80 max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-8 sm:space-y-10">
         <div className="text-center space-y-2 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-sky-400 text-xs font-bold border border-blue-500/20">
             <BookOpen className="w-3.5 h-3.5" />
@@ -267,7 +436,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
           </div>
         ) : (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
               {visibleEvents.map((event) => {
                 const hasImage = Boolean(event.image || event.thumbnail);
                 const eventFormattedDate = formatEventDate(event.start_datetime);
@@ -283,7 +452,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                   >
                     <div>
                       {/* Banner do Evento */}
-                      <div className="h-52 bg-zinc-800 relative overflow-hidden">
+                      <div className="h-48 sm:h-52 bg-zinc-800 relative overflow-hidden">
                         {hasImage ? (
                           <img
                             src={event.image || event.thumbnail || ''}
@@ -312,8 +481,8 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                       </div>
 
                       {/* Conteúdo */}
-                      <div className="p-5 sm:p-6 space-y-2.5">
-                        <h3 className="text-lg font-black text-white tracking-tight group-hover:text-sky-300 transition line-clamp-2">
+                      <div className="p-4 sm:p-6 space-y-2.5">
+                        <h3 className="text-base sm:text-lg font-black text-white tracking-tight group-hover:text-sky-300 transition line-clamp-2">
                           {event.title}
                         </h3>
 
@@ -324,12 +493,12 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                     </div>
 
                     {/* Rodapé com botão Ler Mais */}
-                    <div className="px-5 pb-5 sm:px-6 sm:pb-6 pt-0 flex items-center justify-between border-t border-zinc-800/60 mt-2">
+                    <div className="px-4 pb-4 sm:px-6 sm:pb-6 pt-0 flex items-center justify-between border-t border-zinc-800/60 mt-2">
                       <span className="text-[11px] font-bold text-sky-400 group-hover:text-sky-300 flex items-center gap-1.5 transition">
                         <span>Ler assunto completo</span>
                         <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
                       </span>
-                      <span className="text-[10px] text-zinc-500 font-mono">inChurch Event</span>
+                      <span className="text-[10px] text-zinc-500 font-mono">inChurch</span>
                     </div>
                   </article>
                 );
@@ -361,53 +530,27 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
         )}
       </section>
 
-      {/* Destaque Portal do Louvor */}
-      <section className="py-14 max-w-5xl mx-auto px-4 sm:px-6 w-full">
-        <div className="rounded-3xl bg-gradient-to-r from-blue-950/80 via-zinc-900 to-sky-950/50 border border-blue-500/30 p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl shadow-blue-950/30">
-          <div className="space-y-3 max-w-xl text-center md:text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-sky-300 text-xs font-semibold">
-              <Music className="w-3.5 h-3.5 text-sky-400" />
-              <span>Ministério de Louvor da Igreja</span>
-            </div>
-            <h3 className="text-2xl sm:text-3xl font-black text-white">
-              Área Exclusiva de Músicos & Equipe
-            </h3>
-            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              Acesso às escalas de cultos sincronizadas com Google Agenda e LouveApp, recibos de mensalidades, fundo de confraternização e chamada de ensaios.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row md:flex-col gap-3 w-full md:w-auto shrink-0">
-            <button
-              onClick={handlePortalLouvor}
-              className="py-3.5 px-6 rounded-2xl bg-white text-zinc-950 hover:bg-zinc-100 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-white/10 transition cursor-pointer"
-            >
-              <Music className="w-4 h-4 text-blue-700" />
-              <span>Acessar Portal do Louvor</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </section>
-
       {/* Localização & Contato Oficial */}
-      <section id="localizacao" className="py-14 border-t border-zinc-800/80 bg-zinc-900/40">
+      <section id="localizacao" className="py-12 sm:py-16 border-t border-zinc-800/80 bg-zinc-900/40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-sky-400 text-xs font-bold uppercase tracking-wider">
               <MapPin className="w-4 h-4" />
               <span>Onde Estamos</span>
             </div>
+
             <h3 className="text-xl sm:text-2xl font-black text-white">
               Igreja Evangélica Nova Aliança Esperança
             </h3>
+            
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
               R. Joaquim Monteiro de Franca, nº 457<br />
               Gramame / Colinas do Sul — João Pessoa, PB, 58069-000.<br/>
-              Um ambiente de paz, restauração e adoração para toda a sua família.
+              Um ambiente de acolhimento, restauração e adoração para toda a sua família.
             </p>
 
-            <div className="pt-2">
+            <div className="pt-2 flex flex-wrap gap-3">
               <a
                 href={GOOGLE_MAPS_LOCATION_URL}
                 target="_blank"
@@ -418,23 +561,67 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                 <span>Abrir Rota no Google Maps</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
+
+              <button
+                onClick={handleInstallApp}
+                className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs font-bold transition cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-sky-400" />
+                <span>Baixar Aplicativo</span>
+              </button>
             </div>
           </div>
 
-          <div className="bg-zinc-950 border border-blue-900/40 rounded-3xl p-6 space-y-4 shadow-xl">
+          {/* Cartão de Canais Oficiais */}
+          <div className="bg-zinc-950 border border-blue-900/40 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
             <h4 className="text-sm font-bold text-white flex items-center gap-2">
               <HeartHandshake className="w-4 h-4 text-sky-400" />
-              Canais Oficiais & Endereços
+              Canais Oficiais
             </h4>
-            <div className="space-y-3 text-xs text-zinc-400">
+            
+            <div className="space-y-2.5 text-xs">
+              
+              {/* Site Oficial */}
               <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800">
                 <span className="text-zinc-300 font-medium">Site Oficial:</span>
-                <span className="text-sky-400 font-mono">novaliancaesperancajp.com.br</span>
+                <span className="text-sky-400 font-mono font-semibold">novaliancaesperancajp.com.br</span>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800">
-                <span className="text-zinc-300 font-medium">Portal do Louvor:</span>
-                <span className="text-emerald-400 font-mono">louvor.novaliancaesperancajp.com.br</span>
-              </div>
+
+              {/* Canal do YouTube */}
+              <a
+                href={YOUTUBE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-red-500/50 transition group"
+              >
+                <div className="flex items-center gap-2 text-zinc-300">
+                  <Youtube className="w-4 h-4 text-red-500" />
+                  <span className="font-medium">Canal do YouTube:</span>
+                </div>
+                <div className="flex items-center gap-1 text-red-400 group-hover:text-red-300 font-semibold font-mono text-[11px]">
+                  <span>@NVAEsperançaJPPB</span>
+                  <ExternalLink className="w-3 h-3" />
+                </div>
+              </a>
+
+              {/* Instagram */}
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-pink-500/50 transition group"
+              >
+                <div className="flex items-center gap-2 text-zinc-300">
+                  <Instagram className="w-4 h-4 text-pink-500" />
+                  <span className="font-medium">Instagram:</span>
+                </div>
+                <div className="flex items-center gap-1 text-pink-400 group-hover:text-pink-300 font-semibold font-mono text-[11px]">
+                  <span>@novaaliancaesperancajp</span>
+                  <ExternalLink className="w-3 h-3" />
+                </div>
+              </a>
+
+              {/* Perfil no Google */}
               <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800">
                 <span className="text-zinc-300 font-medium">Perfil no Google:</span>
                 <a 
@@ -447,29 +634,127 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
+
             </div>
           </div>
+
         </div>
       </section>
 
-      {/* Footer com Logo */}
-      <footer className="border-t border-zinc-800/80 py-8 text-center text-xs text-zinc-500 space-y-3">
-        <div className="flex items-center justify-center gap-2">
-          <img src="/logo.png" alt="Logo" className="w-7 h-7 object-contain opacity-80" />
-          <span className="font-bold text-zinc-300 text-sm">Igreja Nova Aliança Esperança</span>
+      {/* Footer com Logo sem fundo branco e Redes Sociais */}
+      <footer className="border-t border-zinc-800/80 py-8 text-center text-xs text-zinc-500 space-y-4 px-4">
+        <div className="flex items-center justify-center gap-3">
+          <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain filter drop-shadow-md" />
+          <span className="font-black text-zinc-200 text-sm tracking-tight">Igreja Nova Aliança Esperança</span>
         </div>
+
+        <div className="flex items-center justify-center gap-4 text-zinc-400">
+          <a 
+            href={INSTAGRAM_URL} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hover:text-pink-400 transition flex items-center gap-1 font-semibold"
+          >
+            <Instagram className="w-3.5 h-3.5" />
+            <span>Instagram</span>
+          </a>
+          <span className="text-zinc-700">•</span>
+          <a 
+            href={YOUTUBE_URL} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hover:text-red-400 transition flex items-center gap-1 font-semibold"
+          >
+            <Youtube className="w-3.5 h-3.5" />
+            <span>YouTube</span>
+          </a>
+          <span className="text-zinc-700">•</span>
+          <a 
+            href={GOOGLE_MAPS_LOCATION_URL} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hover:text-sky-400 transition flex items-center gap-1 font-semibold"
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            <span>Google Maps</span>
+          </a>
+        </div>
+
         <p>Uma igreja para pessoas reais &copy; {new Date().getFullYear()} — João Pessoa / PB</p>
         <p className="text-[11px] text-zinc-600">
-          Todos os direitos reservados.
+          R. Joaquim Monteiro de Franca, 457 - Gramame / Colinas do Sul
         </p>
       </footer>
+
+      {/* ========================================================================= */}
+      {/* GUIA / MODAL DE INSTALAÇÃO DO PWA (ANDROID / IOS / DESKTOP)              */}
+      {/* ========================================================================= */}
+      {showInstallGuide && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowInstallGuide(false)}
+        >
+          <div 
+            className="bg-zinc-900 border border-blue-900/60 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-sky-400" />
+                <h3 className="text-base font-bold text-white">Instalar Aplicativo da Igreja</h3>
+              </div>
+              <button 
+                onClick={() => setShowInstallGuide(false)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-zinc-300">
+              <p className="leading-relaxed">
+                Você pode ter o aplicativo oficial da <strong className="text-white">Nova Aliança Esperança</strong> diretamente na tela inicial do seu celular, funcionando como um app nativo!
+              </p>
+
+              <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-2">
+                <p className="font-bold text-sky-300 flex items-center gap-1.5">
+                  <span>📱 No iPhone / Safari:</span>
+                </p>
+                <ol className="list-decimal list-inside space-y-1 text-zinc-400 pl-1">
+                  <li>Toque no botão <strong>Compartilhar</strong> (ícone de quadrado com seta para cima).</li>
+                  <li>Role para baixo e selecione <strong>"Adicionar à Tela de Início"</strong>.</li>
+                  <li>Toque em <strong>Adicionar</strong> no canto superior direito.</li>
+                </ol>
+              </div>
+
+              <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-2">
+                <p className="font-bold text-emerald-300 flex items-center gap-1.5">
+                  <span>🤖 No Android / Chrome:</span>
+                </p>
+                <ol className="list-decimal list-inside space-y-1 text-zinc-400 pl-1">
+                  <li>Toque nos <strong>três pontinhos (⋮)</strong> no canto superior direito do navegador.</li>
+                  <li>Selecione <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.</li>
+                  <li>Confirme para baixar o ícone oficial da igreja.</li>
+                </ol>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowInstallGuide(false)}
+              className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition cursor-pointer"
+            >
+              Entendi, obrigado!
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL COMPLETO: LEITURA DO ASSUNTO / ARTIGO DO EVENTO (BLOG VIEW)        */}
       {/* ========================================================================= */}
       {selectedEvent && (
         <div 
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in"
           onClick={() => setSelectedEvent(null)}
         >
           <div 
@@ -477,7 +762,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Banner do Modal com botão Fechar */}
-            <div className="relative h-56 sm:h-72 bg-zinc-800 shrink-0 overflow-hidden">
+            <div className="relative h-48 sm:h-72 bg-zinc-800 shrink-0 overflow-hidden">
               {selectedEvent.image ? (
                 <img
                   src={selectedEvent.image}
@@ -494,24 +779,24 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
               {/* Botão Fechar no Canto */}
               <button
                 onClick={() => setSelectedEvent(null)}
-                className="absolute top-4 right-4 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md transition cursor-pointer"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md transition cursor-pointer"
                 title="Fechar"
               >
                 <X className="w-5 h-5" />
               </button>
 
-              <div className="absolute bottom-4 left-6 right-6">
-                <span className="px-3 py-1 rounded-full bg-blue-500/20 backdrop-blur-md text-sky-300 border border-blue-500/30 text-xs font-bold inline-block mb-2">
+              <div className="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-6 sm:right-6">
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 backdrop-blur-md text-sky-300 border border-blue-500/30 text-[11px] font-bold inline-block mb-1 sm:mb-2">
                   Programação Oficial
                 </span>
-                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight drop-shadow-md">
+                <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight drop-shadow-md line-clamp-2">
                   {selectedEvent.title}
                 </h2>
               </div>
             </div>
 
             {/* Corpo do Conteúdo / Assunto Completo */}
-            <div className="p-6 sm:p-8 overflow-y-auto space-y-6 flex-1 text-zinc-300">
+            <div className="p-4 sm:p-8 overflow-y-auto space-y-5 sm:space-y-6 flex-1 text-zinc-300">
               {/* Data e Horário em Destaque */}
               {selectedEvent.start_datetime && (
                 <div className="flex items-center gap-2 text-xs font-bold text-sky-300 bg-blue-950/60 p-3 rounded-xl border border-blue-900/50">
@@ -521,7 +806,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
               )}
 
               {/* Texto Completo com Quebra de Linhas Preservada */}
-              <div className="text-sm sm:text-base leading-relaxed whitespace-pre-line text-zinc-200 font-normal space-y-4">
+              <div className="text-xs sm:text-sm md:text-base leading-relaxed whitespace-pre-line text-zinc-200 font-normal space-y-4">
                 {selectedEvent.description || "Nenhum detalhe adicional informado para este evento."}
               </div>
 
@@ -548,7 +833,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
             </div>
 
             {/* Rodapé do Modal */}
-            <div className="p-4 sm:p-6 bg-zinc-950/80 border-t border-zinc-800 flex items-center justify-between gap-3 shrink-0">
+            <div className="p-3 sm:p-6 bg-zinc-950/80 border-t border-zinc-800 flex items-center justify-between gap-3 shrink-0">
               <button
                 onClick={() => handleShare(selectedEvent)}
                 className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer"

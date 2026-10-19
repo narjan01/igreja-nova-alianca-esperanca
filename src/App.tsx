@@ -79,7 +79,6 @@ export default function App() {
     return (
       <>
         <ChurchLandingPage 
-          onGoToLouvorPortal={() => setViewMode('louvor')}
           onGoToAdmin={handleOpenAdmin}
         />
         <AdminModal
@@ -231,7 +230,8 @@ export default function App() {
       <PixModal
         pix={currentPix}
         onClose={() => setCurrentPix(null)}
-        onConfirmPayment={handleConfirmPix}
+        onConfirmSuccess={handleConfirmPix}
+        isAdmin={isAdmin}
       />
 
       <RelatorioModal
