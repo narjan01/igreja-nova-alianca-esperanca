@@ -19,9 +19,13 @@ import {
 
 interface ChurchLandingPageProps {
   onGoToLouvorPortal?: () => void;
+  onGoToAdmin?: () => void;
 }
 
-export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({ onGoToLouvorPortal }) => {
+export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({ 
+  onGoToLouvorPortal,
+  onGoToAdmin 
+}) => {
   const handlePortalLouvor = () => {
     if (onGoToLouvorPortal) {
       onGoToLouvorPortal();
@@ -52,12 +56,23 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({ onGoToLouv
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={handlePortalLouvor}
-              className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-purple-900/40 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700 text-xs font-bold transition flex items-center gap-2 cursor-pointer"
             >
-              <Music className="w-4 h-4" />
-              <span>Portal do Louvor</span>
-              <ArrowRight className="w-3.5 h-3.5 hidden sm:inline" />
+              <Music className="w-4 h-4 text-purple-400" />
+              <span className="hidden sm:inline">Portal do Louvor</span>
+              <span className="sm:hidden">Louvor</span>
             </button>
+
+            {onGoToAdmin && (
+              <button
+                onClick={onGoToAdmin}
+                className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-purple-900/40 cursor-pointer"
+                title="Acessar Área Restrita da Liderança (Controle de Membros e Células)"
+              >
+                <ShieldCheck className="w-4 h-4 text-purple-200" />
+                <span>Área Restrita</span>
+              </button>
+            )}
           </div>
         </div>
       </nav>

@@ -73,3 +73,88 @@ export interface PixInfo {
   tipo: 'mensal' | 'confra';
   membro_id?: string;
 }
+
+export interface ChurchMemberRole {
+  role: {
+    id: number;
+    name: string;
+  };
+  start_date?: string | null;
+  is_active: boolean;
+}
+
+export interface ChurchMemberLocation {
+  postal_code?: string | null;
+  street_address?: string | null;
+  street_number?: string | null;
+  city?: string | null;
+  state?: string | null;
+  neighborhood?: string | null;
+  address_complement?: string | null;
+  country?: string | null;
+}
+
+export interface ChurchMember {
+  id: number | string;
+  full_name: string;
+  photo?: string | null;
+  status?: string | null;
+  church_profile?: 'member' | 'visitor' | 'leader' | string | null;
+  is_pastor?: boolean;
+  is_leader?: boolean;
+  gender?: 'male' | 'female' | string | null;
+  birthday?: string | null;
+  cpf?: string | null;
+  rg?: string | null;
+  baptized?: boolean | null;
+  baptism_date?: string | null;
+  marital_status?: string | null;
+  marriage_date?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  mobile_phone?: string | null;
+  has_whatsapp?: boolean;
+  membership_number?: string | number | null;
+  occupation?: string | null;
+  membership_type?: string | null;
+  location?: ChurchMemberLocation | null;
+  roles?: ChurchMemberRole[];
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  synced_at?: string;
+}
+
+export interface CellLeader {
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+}
+
+export interface ChurchCell {
+  id: number | string;
+  name: string;
+  image?: string | null;
+  category?: string | null;
+  leaders?: CellLeader[];
+  supervisors?: CellLeader[];
+  auxiliaries?: CellLeader[];
+  weekdays?: string[];
+  frequency?: number;
+  location?: {
+    country?: string;
+    state?: string;
+    city?: string;
+    zip_code?: string;
+    address?: string;
+    address_number?: string;
+    address_complement?: string | null;
+    neighborhood?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  synced_at?: string;
+}
