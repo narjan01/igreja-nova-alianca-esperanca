@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChurchEvent } from '../types';
+import { ChurchEvent, ChurchWord, ChurchNews } from '../types';
 import { ChurchDataService } from '../lib/churchDataService';
 import { 
   Church, 
@@ -33,7 +33,9 @@ import {
   Users,
   Compass,
   Info,
-  Sparkles
+  Sparkles,
+  Newspaper,
+  Quote
 } from 'lucide-react';
 
 interface ChurchLandingPageProps {
@@ -56,12 +58,28 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showMatrizModal, setShowMatrizModal] = useState(false);
 
-  // Estado do Carrossel Deslizante Grande Automático
+  // Estado das Palavras & Ministrações
+  const [words, setWords] = useState<ChurchWord[]>([]);
+  const [loadingWords, setLoadingWords] = useState(true);
+  const [selectedWord, setSelectedWord] = useState<ChurchWord | null>(null);
+  const [currentWordSlide, setCurrentWordSlide] = useState(0);
+  const [isWordsPaused, setIsWordsPaused] = useState(false);
+
+  // Estado das Notícias Habilitadas
+  const [news, setNews] = useState<ChurchNews[]>([]);
+  const [loadingNews, setLoadingNews] = useState(true);
+  const [selectedNews, setSelectedNews] = useState<ChurchNews | null>(null);
+  const [currentNewsSlide, setCurrentNewsSlide] = useState(0);
+  const [isNewsPaused, setIsNewsPaused] = useState(false);
+
+  // Estado do Carrossel Deslizante Grande Automático de Eventos (16:9)
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     loadEvents();
+    loadWords();
+    loadNews();
   }, []);
 
   const loadEvents = async () => {
@@ -69,6 +87,61 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
     const data = await ChurchDataService.getEvents();
     setEvents(data);
     setLoadingEvents(false);
+  };
+
+  const loadWords = async () => {
+    setLoadingWords(true);
+    const data = await ChurchDataService.getWords();
+    setWords(data);
+    setLoadingWords(false);
+  };
+
+  const loadNews = async () => {
+    setLoadingNews(true);
+    const data = await ChurchDataService.getNews();
+    setNews(data);
+    setLoadingNews(false);
+  };
+
+  const handleShareWord = (word: ChurchWord) => {
+    const text = `Palavra: ${word.title} - ${word.preacher}\n"${word.summary}"\n\nIgreja Nova Aliança Esperança`;
+    if (navigator.share) {
+      navigator.share({
+        title: word.title,
+        text,
+        url: window.location.href,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text);
+      alert('Mensagem copiada para a área de transferência!');
+    }
+  };
+
+  const handleShareNews = (item: ChurchNews) => {
+    const text = `Notícia: ${item.title}\n${item.summary}\n\nIgreja Nova Aliança Esperança`;
+    if (navigator.share) {
+      navigator.share({
+        title: item.title,
+        text,
+        url: window.location.href,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text);
+      alert('Notícia copiada para a área de transferência!');
+    }
+  };
+
+  const formatNewsDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return dateStr;
+    } catch {
+      return dateStr;
+    }
   };
 
   const handleShare = (event: ChurchEvent) => {
@@ -122,6 +195,40 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
     return () => clearInterval(interval);
   }, [currentAndFutureEvents.length, isPaused, activeTab]);
 
+  // Autoplay para Palavras (6 segundos)
+  useEffect(() => {
+    if (words.length <= 1 || isWordsPaused || activeTab !== 'inicio') return;
+    const interval = setInterval(() => {
+      setCurrentWordSlide((prev) => (prev + 1) % words.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [words.length, isWordsPaused, activeTab]);
+
+  const handlePrevWordSlide = () => {
+    setCurrentWordSlide((prev) => (prev - 1 + words.length) % words.length);
+  };
+
+  const handleNextWordSlide = () => {
+    setCurrentWordSlide((prev) => (prev + 1) % words.length);
+  };
+
+  // Autoplay para Notícias (6 segundos)
+  useEffect(() => {
+    if (news.length <= 1 || isNewsPaused || activeTab !== 'inicio') return;
+    const interval = setInterval(() => {
+      setCurrentNewsSlide((prev) => (prev + 1) % news.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [news.length, isNewsPaused, activeTab]);
+
+  const handlePrevNewsSlide = () => {
+    setCurrentNewsSlide((prev) => (prev - 1 + news.length) % news.length);
+  };
+
+  const handleNextNewsSlide = () => {
+    setCurrentNewsSlide((prev) => (prev + 1) % news.length);
+  };
+
   const handlePrevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + currentAndFutureEvents.length) % currentAndFutureEvents.length);
   };
@@ -143,6 +250,8 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
     }).format(d);
   };
 
+  const currentWord = words[currentWordSlide] || null;
+  const currentNewsItem = news[currentNewsSlide] || null;
   const currentEvent = currentAndFutureEvents[currentSlide] || null;
 
   return (
@@ -450,10 +559,319 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
             </div>
           </section>
 
-          {/* PROGRAMAÇÃO SEMANAL GRANDE DESLIZANTE AUTOMÁTICO (1 POR 1 A CADA 5s) */}
+          {/* ========================================================================= */}
+          {/* SLIDE 1: PALAVRAS, MINISTRAÇÕES & REFLEXÕES PASTORAIS                    */}
+          {/* ========================================================================= */}
+          <section 
+            id="palavras" 
+            className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-4 sm:space-y-6"
+            onMouseEnter={() => setIsWordsPaused(true)}
+            onMouseLeave={() => setIsWordsPaused(false)}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-1 border-b border-zinc-800/80">
+              <div className="space-y-1.5">
+                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/20">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Edificação & Mensagens Pastorais</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  Palavras & Ministrações
+                </h2>
+                <p className="text-xs sm:text-sm text-zinc-400">
+                  Reflexões bíblicas, sermões e mensagens de fé para abençoar a sua semana.
+                </p>
+              </div>
+
+              {/* Controles de Navegação */}
+              {words.length > 1 && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handlePrevWordSlide}
+                    className="p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-amber-500/50 transition cursor-pointer shadow-sm"
+                    title="Palavra Anterior"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleNextWordSlide}
+                    className="p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-amber-500/50 transition cursor-pointer shadow-sm"
+                    title="Próxima Palavra"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {loadingWords ? (
+              <div className="py-20 text-center space-y-3 bg-zinc-900/40 rounded-3xl border border-zinc-800">
+                <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-xs text-zinc-400">Carregando mensagens pastorais...</p>
+              </div>
+            ) : currentWord ? (
+              <div className="space-y-4">
+                <div
+                  onClick={() => setSelectedWord(currentWord)}
+                  className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-amber-500/30 bg-zinc-950 group shadow-2xl hover:border-amber-400/60 transition duration-500 cursor-pointer w-full aspect-[16/9] flex flex-col justify-end"
+                >
+                  <div className="absolute inset-0 bg-zinc-950 overflow-hidden">
+                    {currentWord.image ? (
+                      <img
+                        key={currentWord.id}
+                        src={currentWord.image}
+                        alt={currentWord.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-700 animate-in fade-in"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-tr from-amber-950/40 via-zinc-900 to-zinc-950 flex items-center justify-center">
+                        <BookOpen className="w-20 h-20 text-zinc-700" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/75 to-transparent"></div>
+                  </div>
+
+                  {/* Badges Topo */}
+                  <div className="absolute top-3 left-3 right-3 sm:top-5 sm:left-5 sm:right-5 flex items-center justify-between z-10">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-3 py-1 rounded-full bg-amber-950/90 backdrop-blur-md text-amber-300 border border-amber-500/40 text-[11px] sm:text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        <span>{currentWord.preacher}</span>
+                      </span>
+
+                      {currentWord.reference && (
+                        <span className="hidden sm:inline-flex px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-zinc-200 border border-white/10 text-xs font-medium">
+                          {currentWord.reference}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/60 backdrop-blur-md text-zinc-300 text-[10px] sm:text-xs font-mono font-bold border border-white/10">
+                        {currentWordSlide + 1} de {words.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Conteúdo Rodapé */}
+                  <div className="relative z-10 p-4 sm:p-7 md:p-8 space-y-1.5 sm:space-y-3 max-w-4xl">
+                    <div className="text-[11px] sm:text-xs font-semibold text-amber-400/90 uppercase tracking-wider flex items-center gap-2">
+                      <span>{currentWord.category}</span>
+                      {currentWord.reference && <span className="sm:hidden">• {currentWord.reference}</span>}
+                    </div>
+
+                    <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight line-clamp-1 sm:line-clamp-2 drop-shadow-md group-hover:text-amber-300 transition duration-300">
+                      {currentWord.title}
+                    </h3>
+
+                    <p className="hidden sm:line-clamp-2 text-xs sm:text-sm text-zinc-200 leading-relaxed drop-shadow max-w-3xl">
+                      {currentWord.summary}
+                    </p>
+
+                    <div className="pt-1 flex flex-wrap items-center gap-2 sm:gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedWord(currentWord);
+                        }}
+                        className="px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white text-[11px] sm:text-xs md:text-sm font-bold shadow-xl shadow-amber-950/60 flex items-center gap-1.5 sm:gap-2 transition cursor-pointer"
+                      >
+                        <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span>Ler Mensagem Completa</span>
+                        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShareWord(currentWord);
+                        }}
+                        className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+                      >
+                        <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+                        <span>Compartilhar</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {words.length > 1 && (
+                  <div className="flex items-center justify-center gap-2 pt-2">
+                    {words.map((w, idx) => (
+                      <button
+                        key={w.id || idx}
+                        onClick={() => setCurrentWordSlide(idx)}
+                        className={`transition-all duration-300 cursor-pointer ${
+                          idx === currentWordSlide
+                            ? 'w-8 h-2.5 rounded-full bg-amber-400 shadow-md shadow-amber-400/50'
+                            : 'w-2.5 h-2.5 rounded-full bg-zinc-700 hover:bg-zinc-500'
+                        }`}
+                        title={`Ver palavra ${idx + 1}: ${w.title}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </section>
+
+          {/* ========================================================================= */}
+          {/* SLIDE 2: NOTÍCIAS HABILITADAS & COMUNICADOS DA IGREJA                     */}
+          {/* ========================================================================= */}
+          <section 
+            id="noticias" 
+            className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-4 sm:space-y-6"
+            onMouseEnter={() => setIsNewsPaused(true)}
+            onMouseLeave={() => setIsNewsPaused(false)}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-1 border-b border-zinc-800/80">
+              <div className="space-y-1.5">
+                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
+                  <Newspaper className="w-3.5 h-3.5" />
+                  <span>Notícias Habilitadas & Comunidade</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  Notícias da Igreja
+                </h2>
+                <p className="text-xs sm:text-sm text-zinc-400">
+                  Fique informado sobre os projetos sociais, novidades das células e comunicados oficiais.
+                </p>
+              </div>
+
+              {/* Controles de Navegação */}
+              {news.length > 1 && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handlePrevNewsSlide}
+                    className="p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-emerald-500/50 transition cursor-pointer shadow-sm"
+                    title="Notícia Anterior"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleNextNewsSlide}
+                    className="p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-emerald-500/50 transition cursor-pointer shadow-sm"
+                    title="Próxima Notícia"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {loadingNews ? (
+              <div className="py-20 text-center space-y-3 bg-zinc-900/40 rounded-3xl border border-zinc-800">
+                <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-xs text-zinc-400">Carregando notícias da comunidade...</p>
+              </div>
+            ) : currentNewsItem ? (
+              <div className="space-y-4">
+                <div
+                  onClick={() => setSelectedNews(currentNewsItem)}
+                  className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-emerald-500/30 bg-zinc-950 group shadow-2xl hover:border-emerald-400/60 transition duration-500 cursor-pointer w-full aspect-[16/9] flex flex-col justify-end"
+                >
+                  <div className="absolute inset-0 bg-zinc-950 overflow-hidden">
+                    {currentNewsItem.image ? (
+                      <img
+                        key={currentNewsItem.id}
+                        src={currentNewsItem.image}
+                        alt={currentNewsItem.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-700 animate-in fade-in"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-tr from-emerald-950/40 via-zinc-900 to-zinc-950 flex items-center justify-center">
+                        <Newspaper className="w-20 h-20 text-zinc-700" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/75 to-transparent"></div>
+                  </div>
+
+                  {/* Badges Topo */}
+                  <div className="absolute top-3 left-3 right-3 sm:top-5 sm:left-5 sm:right-5 flex items-center justify-between z-10">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-3 py-1 rounded-full bg-emerald-950/90 backdrop-blur-md text-emerald-300 border border-emerald-500/40 text-[11px] sm:text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                        <Newspaper className="w-3 h-3 text-emerald-400" />
+                        <span>{currentNewsItem.badge || currentNewsItem.category}</span>
+                      </span>
+
+                      <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-zinc-300 border border-white/10 text-xs font-medium">
+                        {formatNewsDate(currentNewsItem.date)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/60 backdrop-blur-md text-zinc-300 text-[10px] sm:text-xs font-mono font-bold border border-white/10">
+                        {currentNewsSlide + 1} de {news.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Conteúdo Rodapé */}
+                  <div className="relative z-10 p-4 sm:p-7 md:p-8 space-y-1.5 sm:space-y-3 max-w-4xl">
+                    <div className="text-[11px] sm:text-xs font-semibold text-emerald-400 uppercase tracking-wider">
+                      {currentNewsItem.category}
+                    </div>
+
+                    <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight line-clamp-1 sm:line-clamp-2 drop-shadow-md group-hover:text-emerald-300 transition duration-300">
+                      {currentNewsItem.title}
+                    </h3>
+
+                    <p className="hidden sm:line-clamp-2 text-xs sm:text-sm text-zinc-200 leading-relaxed drop-shadow max-w-3xl">
+                      {currentNewsItem.summary}
+                    </p>
+
+                    <div className="pt-1 flex flex-wrap items-center gap-2 sm:gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedNews(currentNewsItem);
+                        }}
+                        className="px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[11px] sm:text-xs md:text-sm font-bold shadow-xl shadow-emerald-950/60 flex items-center gap-1.5 sm:gap-2 transition cursor-pointer"
+                      >
+                        <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span>Ler Notícia Completa</span>
+                        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShareNews(currentNewsItem);
+                        }}
+                        className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+                      >
+                        <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+                        <span>Compartilhar</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {news.length > 1 && (
+                  <div className="flex items-center justify-center gap-2 pt-2">
+                    {news.map((n, idx) => (
+                      <button
+                        key={n.id || idx}
+                        onClick={() => setCurrentNewsSlide(idx)}
+                        className={`transition-all duration-300 cursor-pointer ${
+                          idx === currentNewsSlide
+                            ? 'w-8 h-2.5 rounded-full bg-emerald-400 shadow-md shadow-emerald-400/50'
+                            : 'w-2.5 h-2.5 rounded-full bg-zinc-700 hover:bg-zinc-500'
+                        }`}
+                        title={`Ver notícia ${idx + 1}: ${n.title}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </section>
+
+          {/* ========================================================================= */}
+          {/* SLIDE 3: PROGRAMAÇÃO SEMANAL & CULTOS (PROPORÇÃO 16:9 WIDESCREEN)         */}
+          {/* ========================================================================= */}
           <section 
             id="programacao" 
-            className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-6"
+            className="max-w-6xl mx-auto px-4 sm:px-6 w-full space-y-4 sm:space-y-6"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
           >
@@ -467,7 +885,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                   Programação Semanal & Cultos
                 </h2>
                 <p className="text-xs sm:text-sm text-zinc-400">
-                  Transição automática a cada 5 segundos. Clique no evento para ler o assunto na íntegra.
+                  Transição automática a cada 5 segundos. Exibição panorâmica 16:9 para visualizar a arte inteira.
                 </p>
               </div>
 
@@ -492,7 +910,7 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
               )}
             </div>
 
-            {/* Slide Grande de 1 Evento */}
+            {/* Slide Grande de 1 Evento em Formato 16:9 */}
             {loadingEvents ? (
               <div className="py-24 text-center space-y-3 bg-zinc-900/40 rounded-3xl border border-zinc-800">
                 <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -507,12 +925,12 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
             ) : currentEvent ? (
               <div className="space-y-4">
                 
-                {/* Card Cinematográfico Grande do Evento Ativo */}
+                {/* Card Cinematográfico 16:9 (proporção widescreen sem corte 4:4) */}
                 <div
                   onClick={() => setSelectedEvent(currentEvent)}
-                  className="relative rounded-3xl overflow-hidden border border-blue-900/60 bg-zinc-900 group shadow-2xl hover:border-sky-500/60 transition duration-500 cursor-pointer min-h-[420px] sm:min-h-[480px] flex flex-col justify-end"
+                  className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-blue-900/60 bg-zinc-950 group shadow-2xl hover:border-sky-500/60 transition duration-500 cursor-pointer w-full aspect-[16/9] flex flex-col justify-end"
                 >
-                  {/* Imagem de Fundo Grande */}
+                  {/* Imagem de Fundo Grande em 16:9 */}
                   <div className="absolute inset-0 bg-zinc-950 overflow-hidden">
                     {currentEvent.image || currentEvent.thumbnail ? (
                       <img
@@ -526,56 +944,55 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                         <Church className="w-20 h-20 text-zinc-700" />
                       </div>
                     )}
-                    {/* Gradiente de escurecimento para leitura perfeita */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/75 to-transparent"></div>
-                    <div className="absolute inset-0 bg-black/25"></div>
+                    {/* Gradiente suave apenas na base para visualização límpida da arte */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/65 to-transparent"></div>
                   </div>
 
-                  {/* Badges do Topo (Data, Contador e Indicador de Autoplay) */}
-                  <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+                  {/* Badges do Topo (Data, Contador) */}
+                  <div className="absolute top-3 left-3 right-3 sm:top-5 sm:left-5 sm:right-5 flex items-center justify-between z-10">
                     <div className="flex items-center gap-2">
                       {currentEvent.start_datetime ? (
-                        <span className="px-3.5 py-1.5 rounded-full bg-blue-950/90 backdrop-blur-md text-sky-300 border border-sky-500/50 text-xs font-bold flex items-center gap-1.5 shadow-lg">
-                          <Clock className="w-3.5 h-3.5 text-sky-400" />
+                        <span className="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-blue-950/90 backdrop-blur-md text-sky-300 border border-sky-500/50 text-[11px] sm:text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                          <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-sky-400" />
                           <span className="capitalize">{formatEventDate(currentEvent.start_datetime)}</span>
                         </span>
                       ) : (
-                        <span className="px-3 py-1 rounded-full bg-blue-950/90 backdrop-blur-md text-sky-300 border border-sky-500/40 text-xs font-bold">
+                        <span className="px-3 py-1 rounded-full bg-blue-950/90 backdrop-blur-md text-sky-300 border border-sky-500/40 text-[11px] sm:text-xs font-bold">
                           Próximo Culto
                         </span>
                       )}
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-zinc-300 text-xs font-mono font-bold border border-white/10">
+                      <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/60 backdrop-blur-md text-zinc-300 text-[10px] sm:text-xs font-mono font-bold border border-white/10">
                         {currentSlide + 1} de {currentAndFutureEvents.length}
                       </span>
                     </div>
                   </div>
 
                   {/* Conteúdo do Slide no Rodapé */}
-                  <div className="relative z-10 p-6 sm:p-10 space-y-3.5 max-w-4xl">
-                    <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-md group-hover:text-sky-300 transition duration-300">
+                  <div className="relative z-10 p-4 sm:p-7 md:p-8 space-y-1.5 sm:space-y-3 max-w-4xl">
+                    <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight line-clamp-1 sm:line-clamp-2 drop-shadow-md group-hover:text-sky-300 transition duration-300">
                       {currentEvent.title}
                     </h3>
 
-                    <p className="text-xs sm:text-base text-zinc-200 line-clamp-2 sm:line-clamp-3 leading-relaxed drop-shadow max-w-3xl">
+                    <p className="hidden sm:line-clamp-2 text-xs sm:text-sm text-zinc-200 leading-relaxed drop-shadow max-w-3xl">
                       {currentEvent.description
                         ? currentEvent.description.replace(/\n+/g, ' ')
                         : 'Clique para conferir todos os detalhes e informações deste momento especial conosco.'}
                     </p>
 
-                    <div className="pt-2 flex flex-wrap items-center gap-3">
+                    <div className="pt-1 flex flex-wrap items-center gap-2 sm:gap-3">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedEvent(currentEvent);
                         }}
-                        className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 text-white text-xs sm:text-sm font-bold shadow-xl shadow-blue-950/60 flex items-center gap-2 transition cursor-pointer"
+                        className="px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 text-white text-[11px] sm:text-xs md:text-sm font-bold shadow-xl shadow-blue-950/60 flex items-center gap-1.5 sm:gap-2 transition cursor-pointer"
                       >
-                        <BookOpen className="w-4 h-4" />
+                        <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         <span>Ler Assunto Completo</span>
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </button>
 
                       <button
@@ -583,9 +1000,9 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
                           e.stopPropagation();
                           handleShare(currentEvent);
                         }}
-                        className="px-4 py-2.5 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+                        className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
                       >
-                        <Share2 className="w-4 h-4 text-sky-400" />
+                        <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400" />
                         <span>Compartilhar</span>
                       </button>
                     </div>
@@ -1294,6 +1711,181 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
           </div>
         </div>
       )}
+      {/* ========================================================================= */}
+      {/* MODAL COMPLETO: LEITURA DA PALAVRA / DEVOCIONAL / MINISTRAÇÃO PASTORAL    */}
+      {/* ========================================================================= */}
+      {selectedWord && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in"
+          onClick={() => setSelectedWord(null)}
+        >
+          <div 
+            className="bg-zinc-900 border border-amber-500/40 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header com Imagem */}
+            <div className="relative h-44 sm:h-64 bg-zinc-800 shrink-0 overflow-hidden">
+              {selectedWord.image ? (
+                <img
+                  src={selectedWord.image}
+                  alt={selectedWord.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-tr from-amber-950 via-zinc-900 to-zinc-950 flex items-center justify-center">
+                  <BookOpen className="w-16 h-16 text-amber-500/50" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent"></div>
+
+              {/* Botão Fechar */}
+              <button
+                onClick={() => setSelectedWord(null)}
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md transition cursor-pointer"
+                title="Fechar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-6 sm:right-6">
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 backdrop-blur-md text-amber-300 border border-amber-500/30 text-[11px] font-bold inline-block mb-1 sm:mb-2">
+                  {selectedWord.category}
+                </span>
+                <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight drop-shadow-md line-clamp-2">
+                  {selectedWord.title}
+                </h2>
+              </div>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="p-4 sm:p-8 overflow-y-auto space-y-5 flex-1 text-zinc-300">
+              {/* Informações do Pregador & Data */}
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-amber-950/30 border border-amber-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center font-black text-sm">
+                    {selectedWord.preacher.charAt(0)}
+                  </div>
+                  <div>
+                    <span className="text-xs sm:text-sm font-bold text-white block">{selectedWord.preacher}</span>
+                    <span className="text-[11px] text-zinc-400">{selectedWord.preacherRole || 'Ministério Pastoral'}</span>
+                  </div>
+                </div>
+
+                {selectedWord.reference && (
+                  <span className="px-3 py-1 rounded-xl bg-black/40 text-amber-300 border border-amber-500/30 text-xs font-mono font-bold">
+                    {selectedWord.reference}
+                  </span>
+                )}
+              </div>
+
+              {/* Texto do Sermão */}
+              <div className="text-xs sm:text-sm md:text-base leading-relaxed whitespace-pre-line text-zinc-200 font-normal space-y-4">
+                {selectedWord.content}
+              </div>
+            </div>
+
+            {/* Rodapé */}
+            <div className="p-3 sm:p-6 bg-zinc-950/80 border-t border-zinc-800 flex items-center justify-between gap-3 shrink-0">
+              <button
+                onClick={() => handleShareWord(selectedWord)}
+                className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer"
+              >
+                <Share2 className="w-4 h-4 text-amber-400" />
+                <span>Compartilhar</span>
+              </button>
+
+              <button
+                onClick={() => setSelectedWord(null)}
+                className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition shadow-lg shadow-amber-950/50 cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL COMPLETO: LEITURA DA NOTÍCIA / COMUNICADO OFICIAL                  */}
+      {/* ========================================================================= */}
+      {selectedNews && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in"
+          onClick={() => setSelectedNews(null)}
+        >
+          <div 
+            className="bg-zinc-900 border border-emerald-500/40 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header com Imagem */}
+            <div className="relative h-44 sm:h-64 bg-zinc-800 shrink-0 overflow-hidden">
+              {selectedNews.image ? (
+                <img
+                  src={selectedNews.image}
+                  alt={selectedNews.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-tr from-emerald-950 via-zinc-900 to-zinc-950 flex items-center justify-center">
+                  <Newspaper className="w-16 h-16 text-emerald-500/50" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent"></div>
+
+              {/* Botão Fechar */}
+              <button
+                onClick={() => setSelectedNews(null)}
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white backdrop-blur-md transition cursor-pointer"
+                title="Fechar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-6 sm:right-6">
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 backdrop-blur-md text-emerald-300 border border-emerald-500/30 text-[11px] font-bold inline-block mb-1 sm:mb-2">
+                  {selectedNews.category}
+                </span>
+                <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight drop-shadow-md line-clamp-2">
+                  {selectedNews.title}
+                </h2>
+              </div>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="p-4 sm:p-8 overflow-y-auto space-y-5 flex-1 text-zinc-300">
+              {/* Data & Categoria */}
+              <div className="flex items-center justify-between text-xs text-zinc-400 pb-2 border-b border-zinc-800">
+                <span className="font-bold text-emerald-400">{selectedNews.badge || selectedNews.category}</span>
+                <span>Publicado em {formatNewsDate(selectedNews.date)}</span>
+              </div>
+
+              {/* Texto da Notícia */}
+              <div className="text-xs sm:text-sm md:text-base leading-relaxed whitespace-pre-line text-zinc-200 font-normal space-y-4">
+                {selectedNews.content}
+              </div>
+            </div>
+
+            {/* Rodapé */}
+            <div className="p-3 sm:p-6 bg-zinc-950/80 border-t border-zinc-800 flex items-center justify-between gap-3 shrink-0">
+              <button
+                onClick={() => handleShareNews(selectedNews)}
+                className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer"
+              >
+                <Share2 className="w-4 h-4 text-emerald-400" />
+                <span>Compartilhar</span>
+              </button>
+
+              <button
+                onClick={() => setSelectedNews(null)}
+                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-950/50 cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

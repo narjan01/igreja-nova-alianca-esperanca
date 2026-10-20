@@ -194,3 +194,33 @@ export interface AuthUser {
   isLouvorMember?: boolean; // Usuário também pode pertencer ao louvor
   photo?: string;
 }
+
+
+export interface ChurchWord {
+  id: string;
+  title: string;
+  subtitle?: string;
+  preacher: string;
+  preacherRole?: string;
+  date: string;
+  reference?: string;
+  image?: string;
+  category: string;
+  summary: string;
+  content: string;
+  audioUrl?: string;
+  videoUrl?: string;
+}
+
+export interface ChurchNews {
+  id: string;
+  title: string;
+  date: string;
+  category: string;
+  badge?: string;
+  image?: string;
+  summary: string;
+  content: string;
+  author?: string;
+  featured?: boolean;
+}
