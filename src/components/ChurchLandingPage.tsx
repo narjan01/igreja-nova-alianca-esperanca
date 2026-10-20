@@ -572,13 +572,13 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
               <div className="space-y-1.5">
                 <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/20">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Edificação & Mensagens Pastorais</span>
+                  <span>Ministrações da Igreja Local (Esperança JP)</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                   Palavras & Ministrações
                 </h2>
                 <p className="text-xs sm:text-sm text-zinc-400">
-                  Reflexões bíblicas, sermões e mensagens de fé para abençoar a sua semana.
+                  Sermões, mensagens e estudos bíblicos ministrados na Nova Aliança Esperança em João Pessoa.
                 </p>
               </div>
 
@@ -727,13 +727,13 @@ export const ChurchLandingPage: React.FC<ChurchLandingPageProps> = ({
               <div className="space-y-1.5">
                 <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
                   <Newspaper className="w-3.5 h-3.5" />
-                  <span>Notícias Habilitadas & Comunidade</span>
+                  <span>Notícias da Igreja Local (Esperança JP)</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                  Notícias da Igreja
+                  Notícias & Vida da Igreja
                 </h2>
                 <p className="text-xs sm:text-sm text-zinc-400">
-                  Fique informado sobre os projetos sociais, novidades das células e comunicados oficiais.
+                  Fique por dentro das vigílias, culto kids, encontros da juventude e células em João Pessoa.
                 </p>
               </div>
 
